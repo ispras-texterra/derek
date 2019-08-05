@@ -302,7 +302,7 @@ NER model consists of one context encoder and classifier to label each token wit
 `lst.json` can be like:
 ```json
 {
-    "batch_size": [4, 8, 16]
+    "batch_size": [4, 8, 16],
     "vectors_keys": [["fasttext"], ["fasttext", "upos_hidden"]]
 }
 ```
