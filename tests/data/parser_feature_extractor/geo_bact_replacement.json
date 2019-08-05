@@ -1,0 +1,28 @@
+{
+	"tokens":  [
+		"Recurrence", "of", "Pelecypod-associated", "cholera", "in", "$Geographical$", "."
+	],
+
+	"sentences":  [
+		[0 , 7]
+	],
+
+	"paragraphs":  [
+		[ 0 , 1]
+	],
+
+	"borders": [
+		"start", "in", "in", "in", "in", "in", "end"
+	],
+
+    "dt_head_distances":  [
+		6, -1, 1, -2, -1, -1, 0
+	],
+
+	"dt_labels":  [
+		"nsubj", "prep", "nn", "pobj", "prep", "pobj", "ROOT"
+	],
+	"pos": [
+		"NNP", "IN", "NNP", "NN", "IN", "$Geographical$", "DOT"
+	]
+}

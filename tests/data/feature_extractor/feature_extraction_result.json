@@ -1,0 +1,23 @@
+[
+    {
+      "labels": 0,
+      "labels_mask": [1, 1],
+
+      "rel_args_in_classifier":  1,
+      "entities_types_in_classifier_0": 1,
+      "entities_types_in_classifier_1": 2,
+      "entities_token_distance_in_classifier": 35,
+      "entities_sent_distance_in_classifier": 1
+    },
+    {
+      "labels": 0,
+      "labels_mask": [1, 1],
+
+      "rel_args_in_classifier":  1,
+      "entities_types_in_classifier_0": 1,
+      "entities_types_in_classifier_1": 2,
+      "entities_token_distance_in_classifier": 1,
+      "entities_sent_distance_in_classifier": 1
+    }
+]
+

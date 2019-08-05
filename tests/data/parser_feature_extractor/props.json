@@ -1,0 +1,13 @@
+{
+  "classifier": "baseline",
+
+  "models": [],
+  "internal_emb_size": 10,
+
+  "arc_token_distance_in_attention_size": 1,
+  "arc_token_distance_in_classifier_size": 1,
+  "max_arc_token_distance": 10,
+
+  "token_position_size": 50,
+  "max_word_distance": 10
+}

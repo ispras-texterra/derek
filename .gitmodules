@@ -1,0 +1,3 @@
+[submodule "babylondigger"]
+	path = babylondigger
+	url = git@github.com:ispras-texterra/babylondigger.git

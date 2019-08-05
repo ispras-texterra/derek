@@ -1,0 +1,42 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="row-fluid mt-2">
+    <h4>Recent news</h4>
+    <div>click on item to show processing results</div>
+</div>
+<div class="row-fluid mt-2">
+    <div class="list-group">
+        {% for news in news_list %}
+            <a class="list-group-item list-group-item-action" href="{{ url_for('news_info', news_id=news['_id']) }}">
+              <div class="list-group-item-heading">
+                  {{ news['title'] }}
+              </div>
+              <div class="list-group-item-text">
+                  <span class="badge badge-secondary">
+                      {{ news['time'] }}
+                  </span>
+                  <span class="badge badge-secondary">
+                      {{ news['source'] }}
+                  </span>
+                  <span class="badge badge-{% if news['entities'] | length > 0 %}primary{% else %}secondary{% endif %}">
+                      {{ news['entities'] | length }} entities
+                  </span>
+              </div>
+            </a>
+        {% endfor %}
+    </div>
+</div>
+<div class="row mt-2 justify-content-md-center">
+    <div class="col-md-auto">
+        <div class="btn-group" role="group" aria-label="News navigation">
+            {% if prev_page is not none %}
+                <a class="btn btn-secondary" href="{{ url_for('index', page=prev_page) }}">More recent</a>
+            {% endif %}
+            {% if next_page is not none %}
+                <a class="btn btn-secondary" href="{{ url_for('index', page=next_page) }}">Older</a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

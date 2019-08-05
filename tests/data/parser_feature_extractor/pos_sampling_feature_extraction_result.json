@@ -1,0 +1,43 @@
+[
+    {
+      "labels": 1,
+      "arc_token_distance_in_classifier": 2,
+      "arc_token_distance_in_attention": 2
+    },
+    {
+      "labels": 0,
+      "arc_token_distance_in_classifier": 7,
+      "arc_token_distance_in_attention": 7
+    },
+    {
+      "labels": 1,
+      "arc_token_distance_in_classifier": 2,
+      "arc_token_distance_in_attention": 2
+    },
+    {
+      "labels": 0,
+      "arc_token_distance_in_classifier": 6,
+      "arc_token_distance_in_attention": 6
+    },
+    {
+      "labels": 1,
+      "arc_token_distance_in_classifier": 2,
+      "arc_token_distance_in_attention": 2
+    },
+    {
+      "labels": 0,
+      "arc_token_distance_in_classifier": 5,
+      "arc_token_distance_in_attention": 5
+    },
+    {
+      "labels": 1,
+      "arc_token_distance_in_classifier": 9,
+      "arc_token_distance_in_attention": 9
+    },
+    {
+      "labels": 0,
+      "arc_token_distance_in_classifier": 7,
+      "arc_token_distance_in_attention": 7
+    }
+]
+

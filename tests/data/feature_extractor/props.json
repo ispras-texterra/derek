@@ -1,0 +1,23 @@
+{
+  "classifier": "baseline",
+
+  "models": [],
+
+  "max_candidate_distance": 20,
+
+  "rel_args_in_classifier_size": 20,
+  "entities_types_in_classifier_size": 20,
+  "entities_token_distance_in_classifier_size": 20,
+  "entities_sent_distance_in_classifier_size": 20,
+
+  "max_token_entities_distance": 50,
+  "max_sent_entities_distance": 8,
+
+  "max_word_distance": 50,
+  "max_dt_distance": 3,
+  "token_position_size": 50,
+
+  "internal_emb_size": 10,
+  "dt_distance_emb_size": 50,
+  "borders_size": 50
+}
