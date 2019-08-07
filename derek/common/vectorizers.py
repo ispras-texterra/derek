@@ -7,7 +7,6 @@ import numpy as np
 from derek.data.model import Document
 from derek.data.processing_helper import StandardTokenProcessor
 from derek.data.transformers import DocumentTransformer
-from derek.pretraining_lms.nn.trainer import LMSClassifier
 
 
 class AbstractVectorizer(AbstractContextManager, metaclass=ABCMeta):
@@ -51,32 +50,6 @@ class CompositeVectorizer(AbstractVectorizer, DocumentTransformer):
         self._entered = False
         for v in self._vectorizers[::-1]:
             v.__exit__(*exc)
-
-
-class PretrainVectorizer(AbstractVectorizer):
-    def __init__(self, path):
-        super().__init__()
-        self._path = path
-        self._clf_manager = LMSClassifier(self._path)
-        self._clf = None
-
-    def __enter__(self):
-        self._clf = self._clf_manager.__enter__()
-        self._entered = True
-
-        return self
-
-    def _vectorize_doc(self, doc: Document) -> List[np.array]:
-        return self._clf.vectorize_doc(doc)
-
-    @classmethod
-    def from_props(cls, props: dict):
-        return cls(props["path"])
-
-    def __exit__(self, *exc):
-        self._entered = False
-        self._clf = None
-        self._clf_manager.__exit__(*exc)
 
 
 class FastTextVectorizer(AbstractVectorizer):

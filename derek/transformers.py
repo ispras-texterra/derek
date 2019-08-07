@@ -1,7 +1,7 @@
 from typing import List, Dict
 
 from derek.data.transformers import DocumentTransformer, SequenceDocumentTransformer
-from derek.common.vectorizers import CompositeVectorizer, PretrainVectorizer, FastTextVectorizer
+from derek.common.vectorizers import CompositeVectorizer, FastTextVectorizer
 
 
 def _single_elem_from_props(props, factories, name):
@@ -141,7 +141,6 @@ def _collapser_from_props(props: dict, ne=False):
 
 
 _VECTORIZERS_FACTORIES = {
-    "pretraining_lms": lambda props: PretrainVectorizer.from_props(props),
     "fasttext": lambda props: FastTextVectorizer.from_props(props)
 }
 
