@@ -7,7 +7,7 @@ from derek.common.feature_extraction.converters import create_categorical_conver
 from derek.common.feature_extraction.factory_helper import get_categorical_meta_converters, collect_entities_types
 from derek.common.feature_extraction.token_position_feature_extractor import generate_token_position_feature_extractor
 from derek.data.model import Document
-from derek.rel_ext.feature_extraction.feature_extractor import RelExtFeatureExtractor
+from derek.rel_ext.feature_extraction.feature_extractor import NegativeSamplesFilteringFeatureExtractor
 from derek.rel_ext.feature_extraction.sampling_strategies import DefaultPairExtractionStrategy,\
     DefaultCandidateExtractionStrategy, DifferentEntitiesCandidateFilter, InSameSentenceCandidateFilter,\
     MaxTokenDistanceCandidateFilter, RelArgTypesCandidateFilter, IntersectingCandidateFilter, AndFilter
@@ -53,9 +53,11 @@ def generate_feature_extractor(
     classifier_meta, classifier_converters = get_categorical_meta_converters(
         _get_relation_level_features(props, rel_arg_types, entities_types))
 
-    feature_extractor = RelExtFeatureExtractor(
+    feature_extractor = NegativeSamplesFilteringFeatureExtractor(
         shared_feature_extractor, rel_dict, entities_encoder_converters,
-        token_position_fe, attention_converters, classifier_converters, candidate_extractor, valid_ent_rel_types)
+        token_position_fe, attention_converters, classifier_converters, candidate_extractor, valid_ent_rel_types,
+        negative_ratio=props.get("negative_samples_ratio", float("inf"))
+    )
 
     return feature_extractor, Metas(entities_encoder_meta, attention_meta, classifier_meta)
 

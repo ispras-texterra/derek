@@ -156,7 +156,7 @@ class RelExtTrainer(TFSessionAwareTrainer):
         shared_meta, rel_ext_meta, auxiliary_metas = self._init_metas(prec_docs, unlabeled_docs)
 
         print("Extracting features")
-        rel_ext_samples = list(rel_ext_meta.feature_extractor.extract_features_from_docs(prec_docs))
+        rel_ext_samples = rel_ext_meta.feature_extractor.extract_features_from_docs(prec_docs)
         auxiliary_samples = \
             [list(task_meta.feature_extractor.extract_features_from_docs(unlabeled_docs))
              for task_meta in auxiliary_metas]

@@ -1,4 +1,6 @@
+import random
 from itertools import chain
+from logging import getLogger
 from typing import Iterable
 
 from derek.common.helper import FuncIterable, namespaced, from_namespace
@@ -6,6 +8,8 @@ from derek.common.io import load_with_pickle, save_with_pickle
 from derek.data.helper import get_sentence_distance_between_entities
 from derek.data.model import Document, Entity
 from derek.common.feature_extraction.helper import encode_sequence
+
+logger = getLogger('logger')
 
 
 class RelExtFeatureExtractor:
@@ -185,3 +189,32 @@ class RelExtFeatureExtractor:
     @staticmethod
     def load(path):
         return load_with_pickle(path, "feature_extractor.pkl")
+
+
+class NegativeSamplesFilteringFeatureExtractor(RelExtFeatureExtractor):
+    def __init__(self, *args, negative_ratio: float, **kwargs):
+        assert negative_ratio >= 0, f"negative ratio = {negative_ratio} < 0"
+        super().__init__(*args, **kwargs)
+        self._negative_ratio = negative_ratio
+
+    def extract_features_from_docs(self, docs) -> Iterable:
+        def is_positive(sample):
+            return self.get_type(sample["labels"]) is not None
+
+        samples = super().extract_features_from_docs(docs)
+        negatives, positives = [], []
+
+        for sample in samples:
+            if is_positive(sample):
+                positives.append(sample)
+            else:
+                negatives.append(sample)
+
+        samples_to_pick = len(positives) * self._negative_ratio
+        if samples_to_pick > len(negatives):
+            samples_to_pick = len(negatives)
+        else:
+            samples_to_pick = int(samples_to_pick)
+
+        logger.info(f"Extracted {len(positives)} positive samples, {samples_to_pick} negative samples")
+        return FuncIterable(lambda: chain(positives, random.sample(negatives, samples_to_pick)))
