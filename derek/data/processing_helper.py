@@ -108,13 +108,14 @@ def _replace_digits_with_zero(token):
 
 _REFERENCE_RE = re.compile(r"(\([^\(\)]*et(\s|\.|\.\s)al[^\(\)]*\))", re.IGNORECASE)
 _FIGURE_TABLE_REFS_RE = re.compile(r"(\([^\(\)]*(Fig\.|Figure\s|Figs\.|Table\s|Tables\s)[^\(\)]*\))")
-_DIGIT_REFS_RE = re.compile(r"(\([^a-zA-Z\(\)]+\))")
+_DIGIT_REFS_RE = re.compile(r"(\((\d+|\d+[-–―‐−—‒‑─\-]\d+)(,\s*(\d+|\d+[-–―‐−—‒‑─\-]\d+))*\))")
+_PROCENTS_RE = re.compile(r"(\(\d+%?\))")
 _REFERENCE_AND_RE = re.compile(r"(\([A-Z][a-z]+ and [A-Z][a-z]+, \d{4}\))")
 
 
 def eliminate_references_and_figures(raw_txt):
     matches = {}
-    for regex in (_REFERENCE_RE, _FIGURE_TABLE_REFS_RE, _DIGIT_REFS_RE, _REFERENCE_AND_RE):
+    for regex in (_REFERENCE_RE, _FIGURE_TABLE_REFS_RE, _DIGIT_REFS_RE, _REFERENCE_AND_RE, _PROCENTS_RE):
         for match in regex.finditer(raw_txt):
             start, end = match.span()
             if end > matches.get(start, -1):
@@ -160,8 +161,14 @@ def fix_raw_tokens_after_elimination(raw_tokens, matches):
     shift = 0
 
     for tok_start, tok_end in raw_tokens:
-        while match_idx is not None and tok_end + shift > match_start:
-            shift += match_end - match_start
+        cur_tok_start = tok_start + shift
+        cur_tok_end = tok_end + shift
+
+        while match_idx is not None and cur_tok_end > match_start:
+            cur_tok_end += match_end - match_start
+            if match_start <= cur_tok_start:
+                cur_tok_start += match_end - match_start
+
             match_idx += 1
 
             if match_idx >= len(matches):
@@ -169,7 +176,8 @@ def fix_raw_tokens_after_elimination(raw_tokens, matches):
             else:
                 match_start, match_end = matches[match_idx]
 
-        fixed.append((tok_start + shift, tok_end + shift))
+        fixed.append((cur_tok_start, cur_tok_end))
+        shift = cur_tok_end - tok_end
 
     return fixed
 

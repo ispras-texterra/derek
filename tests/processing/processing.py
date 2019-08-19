@@ -105,6 +105,17 @@ class FixRawTokensAfterEliminationTest(unittest.TestCase):
 
         self.assertEqual(fix_raw_tokens_after_elimination(raw_tokens, matches), expected_tokens)
 
+    def test_inner_matches(self):
+        """
+            original string: peptide (Arg(289)↓Lys(290)).
+            after elimination: peptide (Arg↓Lys).
+        """
+        matches = [(12, 17), (21, 26)]
+        raw_tokens = [(0, 7), (8, 9), (9, 16), (16, 17), (17, 18)]
+        expected_tokens = [(0, 7), (8, 9), (9, 21), (26, 27), (27, 28)]
+
+        self.assertEqual(expected_tokens, fix_raw_tokens_after_elimination(raw_tokens, matches))
+
 
 class EliminateReferencesAndFiguresTest(unittest.TestCase):
     def test_no_references(self):
@@ -127,11 +138,29 @@ class EliminateReferencesAndFiguresTest(unittest.TestCase):
         self.assertEqual(actual_matches, expected_matches)
 
     def test_figure_tables(self):
-        text = "Pelecypod-associated (Fig. 1) bacteria(vegetables 3) in habitat(Table 3)(64%).(Figure 3)"
+        text = "Pelecypod-associated (Fig. 1) bacteria(vegetables 3) in(2) habitat(Table 3)(64%).(Figure 3)"
         expected_text = "Pelecypod-associated  bacteria(vegetables 3) in habitat."
-        expected_matches = [(21, 29), (63, 72), (72, 77), (78, 88)]
+        expected_matches = [(21, 29), (55, 58), (66, 75), (75, 80), (81, 91)]
         actual_text, actual_matches = eliminate_references_and_figures(text)
 
         self.assertEqual(actual_text, expected_text)
         self.assertEqual(actual_matches, expected_matches)
 
+    def test_alpha_beta(self):
+        text = "Bacteria-gen(Αβ) (Fig.1)"
+        expected_text = "Bacteria-gen(Αβ) "
+        expected_matches = [(17, 24)]
+        actual_text, actual_matches = eliminate_references_and_figures(text)
+
+        self.assertEqual(actual_text, expected_text)
+        self.assertEqual(actual_matches, expected_matches)
+
+    def test_digits_lists(self):
+        text = "(1, 1-3) bacteria(3) (Li et al.2004) (a 230-231) (55, 56, 57, 10–16)"
+        expected_text = " bacteria  (a 230-231) "
+        expected_matches = [(0, 8), (17, 20), (21, 36), (49, 68)]
+
+        actual_text, actual_matches = eliminate_references_and_figures(text)
+
+        self.assertEqual(actual_text, expected_text)
+        self.assertEqual(actual_matches, expected_matches)
