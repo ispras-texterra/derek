@@ -83,12 +83,76 @@ To install DEREK library and tools you should:
 
 ### Pretrained models and resources
 
-|       dataset       |   test F1   |     SOTA    |  resources  | DockerImage |
-|:-------------------:|:-----------:|:-----------:|:-----------:|:-----------:|
-|     CoNLL-03-NER    | coming soon | coming soon | coming soon | coming soon |
-| FactRuEval-2016-NER | coming soon | coming soon | coming soon | coming soon |
-|   ChemProt-RelExt   | coming soon | coming soon | coming soon | coming soon |
-|      BB3-RelExt     | coming soon | coming soon | coming soon | coming soon |
+All images contains code, resources (if licence allows it) and training properties for results reproducing. Default entrypoint runs server for provided model, you only need to bind container's port 5000 to your local to get things done. 
+
+#### CoNLL-03 NER
+
+Reproducing [Ma and Hovy (2016)](https://arxiv.org/pdf/1603.01354.pdf) results. 
+
+**DockerImage (on DockerHub) with best model** -- trifonovispras/derek-images:derek-ner-conll03
+
+|                                        model                                       	| dev F1 	| test F1 	|
+|:----------------------------------------------------------------------------------:	|:------:	|:-------:	|
+|                                  DEREK (10 seeds)                                  	| 0.9488 	|  0.9101 	|
+| SOTA without LM [[Wu et al., 2018](https://aclweb.org/anthology/D18-1310)] (5 seeds) 	| 0.9487 	|  0.9189 	|
+| SOTA with LM [[Baevski et al., 2019](https://arxiv.org/pdf/1903.07785.pdf)] (1 seed) 	| 0.9690 	|  0.9350 	|
+
+ImageNote: UDPipe `english-ud-2.0-170801.udpipe` model is used for segmentation on server (you can change it by storing other model and specifying other segmenter arguments when running an image).
+
+#### Ontonotes v5 NER
+
+Standard BiLSTM-CNN-CRF architecture with GloVe embeddings.
+
+**DockerImage (on DockerHub) with best model** -- trifonovispras/derek-images:derek-ner-ontonotes
+
+|                                             model                                            	| dev F1 	| test F1 	|
+|:--------------------------------------------------------------------------------------------:	|:------:	|:-------:	|
+|                                        DEREK (5 seeds)                                       	| 0.8679 	|  0.8506 	|
+| SOTA without LM [[Ghaddar and Langlais, 2018](https://arxiv.org/pdf/1806.03489.pdf)] (5 seeds) 	| 0.8644 	|  0.8795 	|
+|      SOTA with LM [[Akbik et al., 2018](https://aclweb.org/anthology/C18-1139)]  (2 seeds)     	|    -   	|  0.8971 	|
+
+ImageNote: UDPipe `english-ud-2.0-170801.udpipe` model is used for segmentation on server (you can change it by storing other model and specifying other segmenter arguments when running an image).
+
+#### FactRuEval-2016 NER
+
+Standard BiLSTM-CNN-CRF architecture with word2vec embeddings.
+
+**DockerImage (on DockerHub) with best model** -- trifonovispras/derek-images:derek-ner-factrueval
+
+|                                                     model                                                     	|                    test F1                   	|
+|:-------------------------------------------------------------------------------------------------------------:	|:--------------------------------------------:	|
+|                                                DEREK (10 seeds)                                               	| 0.8114 (with LocOrg) 0.8464 (without LocOrg) 	|
+| SOTA without LM [[FactRuEval 2016: Evaluation](http://www.dialog-21.ru/media/3430/starostinaetal.pdf)] (1 seed) 	|  0.809 (with LocOrg) 0.87 (without LocOrg)  	|
+
+ImageNote: NLTK is used for segmentation on server (you can change it by storing other model and specifying other segmenter arguments when running an image).
+
+#### ChemProt RelExt 
+
+2-layered encoder model with postprocessed NLTK segmentation with/without SDP-multitask learning on GENIA corpus.
+
+**DockerImage (on DockerHub) with best model** -- trifonovispras/derek-images:derek-relext-chemprot
+
+|                                             model                                             	| dev F1 	| test F1 	|
+|:---------------------------------------------------------------------------------------------:	|:------:	|:-------:	|
+|                               DEREK without multitask (10 seeds)                              	| 0.6346 	|  0.6245 	|
+|                                DEREK with multitask  (10 seeds)                               	| 0.6582 	|  0.6411 	|
+| SOTA without LM [[Peng et al., 2018](https://arxiv.org/pdf/1802.01255.pdf)] (1 seed, train+dev) 	|    -   	|  0.6410 	|
+|         SOTA with LM [[Peng et al., 2019](https://arxiv.org/pdf/1906.05474.pdf)] (1 seed)        	|    -   	|  0.7440 	|
+
+ImageNote: NLTK with postprocessing is used for segmentation on server (you can change it by storing other model and specifying other segmenter arguments when running an image).
+
+#### BB3 RelExt 
+
+2-layered encoder model.
+
+**DockerImage (on DockerHub) with best model** -- trifonovispras/derek-images:derek-relext-bb3
+
+|                                                           model                                                          	| dev F1 	| test F1 	|
+|:------------------------------------------------------------------------------------------------------------------------:	|:------:	|:-------:	|
+|                                                     DEREK (20 seeds)                                                     	| 0.5662 	|  0.4942 	|
+| SOTA without LM [[Li et al., 2017](https://www.inderscienceonline.com/doi/abs/10.1504/IJDMB.2017.085283)] (no information) 	|    -   	|  0.5810 	|
+
+ImageNote: UDPipe `english-ud-2.0-170801.udpipe` is used for segmentation on server (you can change it by storing other model and specifying other segmenter arguments when running an image).
 
 ### How to train your own model and use it for prediction?
 
@@ -892,4 +956,38 @@ Presence of `entities` and `relations` keys is controlled via respective query p
 
 #### How to prepare Docker container with HTTP server, trained model and required resources?
 
-Coming soon...
+1. Prepare `model` folder in source path with trained model (must contain `extractor`, `model`, `graph.pkl` and other files) or several folders for several models
+1. Prepare `resources` folder in source path with preprocessing models and `transformers.json` containing relative paths(for example, `resources/udpipe_model.udpipe`)
+1. Prepare DockerFile in source path using provided template; you must configure ENTRYPOINT to run server.py (see chapter `How to run HTTP server for trained model`).
+ : 
+     ```dockerfile
+    FROM ubuntu:18.04
+    
+    RUN apt-get update \
+        && DEBIAN_FRONTEND=noninteractive apt-get install -y locales \
+        && sed -i -e 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen \
+        && dpkg-reconfigure --frontend=noninteractive locales \
+        && update-locale LANG=en_US.UTF-8
+    ENV LANG en_US.UTF-8
+    ENV LANGUAGE en_US:en  
+    ENV LC_ALL en_US.UTF-8
+    
+    RUN apt-get update && apt-get install -qq -y python3 python3-pip
+    COPY requirements.txt /derek/
+    RUN pip3 install -r /derek/requirements.txt
+    RUN python3 -c "import nltk;nltk.download('punkt')"
+    COPY babylondigger /derek/babylondigger
+    COPY tools /derek/tools
+    RUN pip3 install -r /derek/tools/requirements.txt
+    COPY derek /derek/derek
+    
+    COPY model /derek/model
+    COPY resources /derek/resources
+    
+    WORKDIR derek
+    ENV PYTHONPATH .:babylondigger:babylondigger/tdozat-parser-v3
+    ENTRYPOINT ["python3", "tools/server.py", "-remote", "-ner", "<model_file>", "-rel_ext", "<model_file>", "-transformer_props", "resources/transformers.json", "<segmenter_type_flags>"]
+    ```
+1. Build image with command `docker build . -t derek-container-name`
+1. Run container `docker run -p 80:5000 -d derek-container-name`. This command binds host's port 80 to container's port 5000, change it if you wish.
+1. Now you can send requests for server available on 80'th port. 
