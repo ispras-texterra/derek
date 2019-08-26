@@ -1,0 +1,8 @@
+language: python
+image: python:3.6
+
+before_script:
+  - pip3 install -r requirements.txt
+tests:
+  script:
+    bash tests/run_unit_tests.sh
