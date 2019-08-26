@@ -3,6 +3,6 @@ fasttext==0.9.1
 gensim==3.8.0
 texterra==1.0.1
 networkx==2.3
-nltk==3.4.4
+nltk==3.4.5
 numpy==1.16.4
 msgpack==0.6.1
