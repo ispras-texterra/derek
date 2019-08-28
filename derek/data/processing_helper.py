@@ -272,7 +272,9 @@ def _replace_quotes_with_std(token, *, sub_for='"'):
 def _identity(token: str) -> str:
     return token
 
+
 class StandardTokenProcessor:
+    # TODO: include lemmatization in StandardTokenProcessor
     def __init__(self, lowercase: bool, replace_digits: bool, replace_quotes: bool):
         flags_with_processors = [
             (lowercase, str.lower),
@@ -284,7 +286,6 @@ class StandardTokenProcessor:
             self.__processor = compose_functions(processors)
         else:
             self.__processor = _identity
-
 
     def __call__(self, token: str) -> str:
         return self.__processor(token)

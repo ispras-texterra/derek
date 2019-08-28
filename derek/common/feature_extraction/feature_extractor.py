@@ -1,14 +1,19 @@
+from typing import Dict
+
+from derek.common.feature_extraction.gazetteer_feature_extractor import GazetteerFeatureExtractor
 from derek.common.feature_extraction.helper import encode_sequence, encode_sequence3d
 from derek.data.model import Document
 
 
 class TokenFeatureExtractor:
-    def __init__(self, we_converters_preprocessors, word_level_features, char_level_features, vectors_keys):
+    def __init__(self, we_converters_preprocessors, word_level_features, char_level_features, vectors_keys,
+                 gazetteer_feature_extractors: Dict[str, GazetteerFeatureExtractor]):
 
         self.we_converters_preprocessors = we_converters_preprocessors
         self.word_level_features = word_level_features
         self.char_level_features = char_level_features
         self.vectors_keys = vectors_keys
+        self.gazetteer_feature_extractors = gazetteer_feature_extractors
 
     def extract_features_from_doc(self, doc: Document, start_token_idx, end_token_idx):
         ret = {
@@ -25,6 +30,9 @@ class TokenFeatureExtractor:
 
         for name, converter in self.word_level_features.items():
             ret[name] = encode_sequence(doc.token_features[name][start_token_idx:end_token_idx], converter)
+
+        for name, fe in self.gazetteer_feature_extractors.items():
+            ret[name] = fe.extract_features(doc, start_token_idx, end_token_idx)
 
         if 'chars' in self.char_level_features:
             chars = TokenFeatureExtractor._get_chars_features(
@@ -49,6 +57,9 @@ class TokenFeatureExtractor:
 
         if name in self.char_level_features:
             return self.char_level_features[name]['converter']['$PADDING$'], 2
+
+        if name in self.gazetteer_feature_extractors:
+            return self.gazetteer_feature_extractors[name].get_padding_value_and_rank()
 
     @staticmethod
     def _get_chars_features(doc: Document, start_token_idx: int, end_token_idx: int, padding_size: int):
