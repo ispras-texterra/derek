@@ -1,3 +1,4 @@
+import collections
 from functools import reduce
 from typing import Iterator, Callable, Tuple, Dict, Union, List
 
@@ -12,7 +13,7 @@ class FuncIterable:
         return self.func()
 
 
-class BlockIterator:
+class BlockIterator(collections.Iterator):
 
     def __init__(self, iterator: Iterator, block_size: int):
         self.iterator = iterator
