@@ -1,0 +1,23 @@
+#!/usr/bin/env ansible-playbook
+- hosts: all
+  become: true
+  tasks:
+  - name: Add nvidia-docker GPG key
+    apt_key: url=https://nvidia.github.io/nvidia-docker/gpgkey
+
+  - name: Get nvidia-docker list
+    get_url:
+      url: "https://nvidia.github.io/nvidia-docker/{{ hostvars[inventory_hostname].ansible_distribution|lower}}\
+        {{ hostvars[inventory_hostname].ansible_distribution_version }}/nvidia-docker.list"
+      dest: "/etc/apt/sources.list.d/nvidia-docker.list"
+
+  - name: Install nvidia-container-toolkit
+    apt:
+      name: ['nvidia-container-toolkit']
+      state: present
+      update_cache: yes
+
+  - name: Restart docker
+    systemd:
+      name: docker
+      state: restarted

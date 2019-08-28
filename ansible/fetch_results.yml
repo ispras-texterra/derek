@@ -1,0 +1,11 @@
+#!/usr/bin/env ansible-playbook
+- hosts: all
+  vars:
+    src_destination: ~/derek
+    fetch_directory_name: out
+  tasks:
+  - name: Fetch results
+    synchronize:
+      src: "{{ src_destination }}/out/"
+      dest: "../{{ fetch_directory_name }}"
+      mode: pull

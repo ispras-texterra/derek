@@ -1,0 +1,45 @@
+#!/usr/bin/env ansible-playbook
+- hosts: all
+  vars:
+    src_destination: ~/derek
+  tasks:
+    - name: Create directory
+      file:
+        path: "{{ src_destination }}"
+        state: directory
+
+    - name: Upload main srcs
+      synchronize:
+        src: ../derek/
+        dest: "{{ src_destination }}/derek"
+        delete: yes
+    
+    - name: Upload tools srcs
+      synchronize:
+        src: ../tools/
+        dest: "{{ src_destination }}/tools"
+        delete: yes
+    
+    - name: Upload digger srcs
+      synchronize:
+        src: ../babylondigger/
+        dest: "{{ src_destination }}/babylondigger"
+        delete: yes
+
+    - name: Upload dockerfiles
+      synchronize:
+        src: ../dockerfiles/
+        dest: "{{ src_destination }}/dockerfiles"
+        delete: yes
+
+    - name: Upload resources
+      synchronize:
+        src: ../resources/
+        dest: "{{ src_destination }}/resources"
+        delete: yes
+
+    - name: Upload requirements.txt
+      synchronize:
+        src: ../requirements.txt
+        dest: "{{ src_destination }}/requirements.txt"
+        delete: yes

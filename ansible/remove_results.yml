@@ -1,0 +1,17 @@
+#!/usr/bin/env ansible-playbook
+- hosts: all
+  vars:
+    src_destination: ~/derek
+  tasks:
+  - name: Get absolute path
+    command: echo "{{ src_destination }}"
+    register: abs_path
+  - name: Set absolute path
+    set_fact:
+      src_abs_destination: "{{ abs_path.stdout }}"
+
+  - name: Delete out directory
+    file:
+      path: "{{ src_abs_destination }}/out/"
+      state: absent
+    become: true
