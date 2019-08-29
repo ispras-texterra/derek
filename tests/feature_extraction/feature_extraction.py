@@ -112,8 +112,8 @@ class TestTokenFeatureExtractorClass(unittest.TestCase):
         self.assertRaises(Exception, generate_token_feature_extractor, [doc], {"gazetteers": [{"path": ""}]})
 
     def test_gazetteer_features(self):
-        doc = Document('', ['Ваня', 'едет', 'в', 'Париж', 'из', 'Москвы'], [], [],
-                       token_features={'lemmas': ['Ваня', 'ехать', 'в', 'Париж', 'из', 'Москва']})
+        doc = Document('', ['Ваня', 'едет', 'в', 'Париж', 'из', 'Москвы', 'в', 'москву'], [], [],
+                       token_features={'lemmas': ['Ваня', 'ехать', 'в', 'Париж', 'из', 'Москва', 'в', 'москва']})
         token_fe, token_meta = generate_token_feature_extractor([doc], {
             "gazetteers": [
                              {"path": "tests/data/feature_extractor/gazetteer.txt", "lower": True, 'lemmatize': True},
@@ -121,12 +121,12 @@ class TestTokenFeatureExtractorClass(unittest.TestCase):
                              {"path": "tests/data/feature_extractor/gazetteer.txt", "lower": True, 'lemmatize': False},
                              {"path": "tests/data/feature_extractor/gazetteer.txt", "lower": False, 'lemmatize': False}
                              ]})
-        features = token_fe.extract_features_from_doc(doc, 0, 6)
+        features = token_fe.extract_features_from_doc(doc, 0, 8)
 
-        self.assertEqual(features['gazetteer_0'], [1, 1, 1, 1, 1, 1])
-        self.assertEqual(features['gazetteer_1'], [1, 1, 1, 2, 1, 2])
-        self.assertEqual(features['gazetteer_2'], [1, 1, 1, 1, 1, 1])
-        self.assertEqual(features['gazetteer_3'], [1, 1, 1, 2, 1, 1])
+        self.assertEqual(features['gazetteer_0'], [1, 1, 1, 2, 1, 2, 1, 2])
+        self.assertEqual(features['gazetteer_1'], [1, 1, 1, 2, 1, 2, 1, 1])
+        self.assertEqual(features['gazetteer_2'], [1, 1, 1, 2, 1, 1, 1, 1])
+        self.assertEqual(features['gazetteer_3'], [1, 1, 1, 2, 1, 1, 1, 1])
 
     def test_gazetteer_lemmatize_feature(self):
         doc = Document('', ['Ваня', 'едет', 'в', 'Париж', 'из', "Москвы"], [], [],

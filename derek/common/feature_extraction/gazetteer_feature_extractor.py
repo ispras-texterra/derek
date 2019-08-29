@@ -20,8 +20,11 @@ def generate_gazetteers_feature_extractors(props: dict):
             features[gazetteer_name]['embedding_size'] = config['emb_size']
 
         gazetteer = _read_gazetteer(config["path"])
+        processor = StandardTokenProcessor.from_props(config)
+        gazetteer = set(map(processor, gazetteer))
+
         gazetteer_feature_extractors[gazetteer_name] = GazetteerFeatureExtractor(
-            gazetteer, StandardTokenProcessor.from_props(config), converter, config.get("lemmatize", False))
+            gazetteer, processor, converter, config.get("lemmatize", False))
 
     meta, _ = get_categorical_meta_converters(features)
     return meta, gazetteer_feature_extractors
