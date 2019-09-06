@@ -106,6 +106,44 @@ class TestTokenFeatureExtractorClass(unittest.TestCase):
 
         self.assertEqual(doc.token_features["vectors"][1: 4], vectors)
 
+    def test_gazetteer_features_assert(self):
+        doc = Document('', ['Planning', 'of', 'work', 'by', 'Elon', ""], [], [],
+                       token_features={})
+        self.assertRaises(Exception, generate_token_feature_extractor, [doc], {"gazetteers": [{"path": ""}]})
+
+    def test_gazetteer_features(self):
+        doc = Document('', ['Ваня', 'едет', 'в', 'Париж', 'из', 'Москвы', 'в', 'москву'], [], [],
+                       token_features={'lemmas': ['Ваня', 'ехать', 'в', 'Париж', 'из', 'Москва', 'в', 'москва']})
+        token_fe, token_meta = generate_token_feature_extractor([doc], {
+            "gazetteers": [
+                             {"path": "tests/data/feature_extractor/gazetteer.txt", "lower": True, 'lemmatize': True},
+                             {"path": "tests/data/feature_extractor/gazetteer.txt", "lower": False, 'lemmatize': True},
+                             {"path": "tests/data/feature_extractor/gazetteer.txt", "lower": True, 'lemmatize': False},
+                             {"path": "tests/data/feature_extractor/gazetteer.txt", "lower": False, 'lemmatize': False}
+                             ]})
+        features = token_fe.extract_features_from_doc(doc, 0, 8)
+
+        self.assertEqual(features['gazetteer_0'], [1, 1, 1, 2, 1, 2, 1, 2])
+        self.assertEqual(features['gazetteer_1'], [1, 1, 1, 2, 1, 2, 1, 1])
+        self.assertEqual(features['gazetteer_2'], [1, 1, 1, 2, 1, 1, 1, 1])
+        self.assertEqual(features['gazetteer_3'], [1, 1, 1, 2, 1, 1, 1, 1])
+
+    def test_gazetteer_lemmatize_feature(self):
+        doc = Document('', ['Ваня', 'едет', 'в', 'Париж', 'из', "Москвы"], [], [],
+                       token_features={})
+        token_fe0, token_meta0 = generate_token_feature_extractor([doc], {
+            "gazetteers": [{"path": "tests/data/feature_extractor/gazetteer.txt", 'lemmatize': True}]})
+
+        token_fe1, token_meta1 = generate_token_feature_extractor([doc], {
+            "gazetteers": [{"path": "tests/data/feature_extractor/gazetteer.txt",  "lower": False, 'lemmatize': True}]})
+
+        token_fe2, token_meta2 = generate_token_feature_extractor([doc], {
+            "gazetteers": [{"path": "tests/data/feature_extractor/gazetteer.txt", "lower": True, 'lemmatize': True}]})
+
+        self.assertRaises(KeyError, token_fe0.extract_features_from_doc, doc, 0, 6)
+        self.assertRaises(KeyError, token_fe1.extract_features_from_doc, doc, 0, 6)
+        self.assertRaises(KeyError, token_fe2.extract_features_from_doc, doc, 0, 6)
+
 
 class TestTokenPositionFeatureExtractorClass(unittest.TestCase):
     def test_no_features(self):

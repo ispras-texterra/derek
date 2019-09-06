@@ -10,6 +10,7 @@ from derek.common.feature_extraction.converters import create_unsigned_integers_
 from derek.common.feature_extraction.feature_extractor import TokenFeatureExtractor
 from derek.common.feature_extraction.features_meta import TokenFeaturesMeta, WordEmbeddingsMeta, BasicFeaturesMeta, \
     CharsFeaturesMeta
+from derek.common.feature_extraction.gazetteer_feature_extractor import generate_gazetteers_feature_extractors
 from derek.common.feature_extraction.helper import Direction
 from derek.common.feature_extraction.factory_helper import extract_tokens, init_vectors, init_categorical_features, \
     collect_chars_set, collect_feature_labels, get_categorical_meta_converters
@@ -28,6 +29,9 @@ def generate_token_feature_extractor(docs: Iterable[Document], props: dict, char
     word_meta, word_converters = get_categorical_meta_converters(
         _init_word_level_features(docs, props, morph_features))
 
+    gazetteer_meta, gazetteer_fes = generate_gazetteers_feature_extractors(props)
+    word_meta += gazetteer_meta
+
     vectors_keys = props.get('vectors_keys', [])
     if len(vectors_keys) != len(set(vectors_keys)):
         raise Exception('"vectors_keys" should not contain duplicates')
@@ -36,14 +40,14 @@ def generate_token_feature_extractor(docs: Iterable[Document], props: dict, char
     if not vectorized_features and not we_converters_preprocessors:
         warn("Neither word embeddings nor vectorized features were specified")
 
-    word_meta = word_meta + BasicFeaturesMeta([], [], vectorized_features)
+    word_meta += BasicFeaturesMeta([], [], vectorized_features)
 
     char_level_features = _init_char_level_features(docs, props, char_padding_size)
     # We assume that char features are only embedded features
     char_features, _ = init_categorical_features(char_level_features)
 
     return TokenFeatureExtractor(
-        we_converters_preprocessors, word_converters, char_level_features, vectors_keys), \
+        we_converters_preprocessors, word_converters, char_level_features, vectors_keys, gazetteer_fes), \
         TokenFeaturesMeta(we_meta, word_meta, CharsFeaturesMeta(char_features))
 
 

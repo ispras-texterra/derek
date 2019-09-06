@@ -599,6 +599,22 @@ For all features zero size means "one-hot", positive size means "projection to e
 }
 ```
 
+#### Gazetteer features properties
+
+Sometimes in NLP tasks you can provide additional useful features by marking some predefined specific tokens.
+This is known as gazetteer features. You can prepare txt-file with such tokens on separated lines and turn on this feature.
+Also you can specify to lowercase and/or lemmatize tokens before checking them in gazetteer.
+Note: gazetter is not lemmatized even if this feature is on. Only document tokens are affected, so prepare lemmatized gazetteer if you want to use them (you can use `tools/gazetteer_lemmatizer.py` module).
+
+```json
+{
+  "gazetteers": [
+    {"path": "tests/data/feature_extractor/gazetteer.txt", "lower": false, "lemmatize": true}
+  ]
+}
+```
+
+
 #### External NER features properties (NER task only)
 
 These features require turning external NER on at `generate_dataset.py` stage (see above sections).
