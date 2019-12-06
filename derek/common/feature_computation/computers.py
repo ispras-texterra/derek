@@ -1,3 +1,5 @@
+from typing import List
+
 from derek.common.feature_extraction.helper import Direction
 from derek.data.model import Document
 
@@ -126,3 +128,31 @@ def get_morph_features(doc, morph_features):
             token_features[feat] = [feats_dict.get(feat, None) for feats_dict in doc.token_features['feats']]
 
     return token_features
+
+
+_CAPITALIZATION_CLASSIFIERS = [
+    ("allUpper", lambda t: t.isupper()),
+    ("upperFirst", lambda t: t and t[0].isupper()),
+    ("upperNotFirst", lambda t: t and any(c.isupper() for c in t[1:]))
+]
+
+_ALPHANUM_CLASSIFIERS = [
+    ("alpha", lambda t: t.isalpha()),
+    ("numeric", lambda t: t.isnumeric()),
+    ("alphanumeric", lambda t: t.isalnum())
+]
+
+
+def _classify_token(token: str, classifiers: list) -> str:
+    for name, classifier in classifiers:
+        if classifier(token):
+            return name
+    return "other"
+
+
+def get_capitalization_features(doc: Document) -> List[str]:
+    return [_classify_token(t, _CAPITALIZATION_CLASSIFIERS) for t in doc.tokens]
+
+
+def get_alphanumeric_features(doc: Document) -> List[str]:
+    return [_classify_token(t, _ALPHANUM_CLASSIFIERS) for t in doc.tokens]

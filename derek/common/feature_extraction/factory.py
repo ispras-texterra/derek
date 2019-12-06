@@ -182,6 +182,15 @@ def _init_word_level_features(docs: Iterable[Document], props: dict, morph_featu
             if props["morph_feats_emb_size"] != 0:
                 features[feat]['embedding_size'] = props["morph_feats_emb_size"]
 
+    if props.get("capitalization_emb_size", -1) >= 0:
+        for feature in ("capitalization", "alphanumeric"):
+            possible_types = collect_feature_labels(docs, feature)
+            features[feature] = {
+                'converter': create_categorical_converter(possible_types, has_oov=True)
+            }
+            if props["capitalization_emb_size"] != 0:
+                features[feature]['embedding_size'] = props["capitalization_emb_size"]
+
     return features
 
 

@@ -1,7 +1,7 @@
 import unittest
 
 from derek.common.feature_computation.computers import get_dt_breakups_feature, get_dt_deltas_feature, \
-    get_sentence_borders_feature, get_dt_depths_feature
+    get_sentence_borders_feature, get_dt_depths_feature, get_capitalization_features, get_alphanumeric_features
 from derek.data.model import Document, Sentence, Paragraph
 from derek.common.feature_extraction.helper import Direction
 
@@ -115,6 +115,31 @@ class TestBreakupsExtractionClass(unittest.TestCase):
         deltas = sent_1_deltas + sent_2_deltas
 
         self.assertEqual(get_dt_deltas_feature(self.doc_with_2_sent, direction), deltas)
+
+
+class CapitalizationFeaturesTests(unittest.TestCase):
+    def setUp(self) -> None:
+        tokens = [
+            "Elon", "Musk", "is", "ready", "for", "TESLA", ".",
+            "somestuff88", "88", "", "8.8", "™"
+        ]
+        sentences = [Sentence(0, len(tokens))]
+        paragraphs = [Paragraph(0, 1)]
+        self.doc = Document("", tokens, sentences, paragraphs)
+
+    def test_capitalization(self):
+        expected = [
+            "upperFirst", "upperFirst", "other", "other", "other", "allUpper", "other",
+            "other", "other", "other", "other", "other"
+        ]
+        self.assertListEqual(expected, get_capitalization_features(self.doc))
+
+    def test_alphanumeric(self):
+        expected = [
+            "alpha", "alpha", "alpha", "alpha", "alpha", "alpha", "other",
+            "alphanumeric", "numeric", "other", "other", "other"
+        ]
+        self.assertListEqual(expected, get_alphanumeric_features(self.doc))
 
 
 if __name__ == "__main__":

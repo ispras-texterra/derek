@@ -73,7 +73,8 @@ class TestNERCManagers(unittest.TestCase):
             "dropout": 0.5,
             "optimizer": "adam",
             "epoch": 2,
-            "clip_norm": 5
+            "clip_norm": 5,
+            "capitalization_emb_size": 10
         }
 
         self.docs_no_entities = [d.without_entities() for d in self.docs]

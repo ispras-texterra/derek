@@ -4,7 +4,8 @@ from warnings import warn
 
 from derek.common.feature_extraction.helper import Direction
 from derek.common.feature_computation.computers import get_dt_depths_feature, get_sentence_borders_feature, \
-    get_entities_types_and_depths_features, get_dt_breakups_feature, get_dt_deltas_feature, get_morph_features
+    get_entities_types_and_depths_features, get_dt_breakups_feature, get_dt_deltas_feature, get_morph_features, \
+    get_capitalization_features, get_alphanumeric_features
 from derek.data.model import Document
 from derek.common.io import save_with_pickle, load_with_pickle
 
@@ -46,6 +47,8 @@ class SyntacticFeatureComputer(AbstractFeatureComputer):
                     doc, direction=direction, precomputed_depths=new_token_features["dt_depths"])
 
         new_token_features["borders"] = get_sentence_borders_feature(doc)
+        new_token_features["capitalization"] = get_capitalization_features(doc)
+        new_token_features["alphanumeric"] = get_alphanumeric_features(doc)
         new_token_features.update(get_morph_features(doc, self.morph_features))
 
         return new_token_features
