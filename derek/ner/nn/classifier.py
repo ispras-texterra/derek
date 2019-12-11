@@ -10,7 +10,7 @@ from derek.common.nn.tf_io import save_classifier, load_classifier
 from derek.common.nn.tf_utils import TFSessionAwareClassifier, TFSessionAwareTrainer
 from derek.common.nn.trainers import predict_for_samples, \
     train_for_samples, get_char_padding_size, TaskTrainMeta, get_decayed_lr, get_const_controller
-from derek.common.nn.batchers import get_standard_batcher_factory, get_bucketed_batcher_factory
+from derek.common.nn.batchers import get_standard_batcher_factory, get_batcher_from_props
 from derek.data.model import Document, Entity
 from derek.common.nn.graph_factory import build_graphs_with_shared_encoder
 from derek.ner.nn.graph_factory import build_task_graph_meta
@@ -22,6 +22,9 @@ logger = getLogger('logger')
 
 
 class _Classifier:
+    # TODO make prediction batch size configurable
+    _PREDICTION_BATCH_SIZE = 400
+
     def __init__(self, graph, feature_extractor: NERFeatureExtractor, feature_computer, session, saver, post_processor):
         self.graph = graph
         self.extractor = feature_extractor
@@ -34,10 +37,11 @@ class _Classifier:
         doc = self.feature_computer.create_features_for_doc(doc)
         sent_samples = self.extractor.extract_features_from_doc(doc)
 
+        batcher = get_standard_batcher_factory(
+            sent_samples, self._PREDICTION_BATCH_SIZE, self.extractor.get_padding_value_and_rank)
+
         # we have only predictions as output
-        sent_labels, = predict_for_samples(
-            self.graph, self.session, ["predictions"],
-            get_standard_batcher_factory(sent_samples, 400, self.extractor.get_padding_value_and_rank))
+        sent_labels, = predict_for_samples(self.graph, self.session, ["predictions"], batcher)
 
         predicted = []
 
@@ -102,10 +106,8 @@ class NERTrainer(TFSessionAwareTrainer):
 
         classifier = _Classifier(graph, feature_extractor, feature_computer, self._session, saver, processor)
 
-        batcher_factory = get_bucketed_batcher_factory(
-            samples, self.props["batch_size"], feature_extractor.get_padding_value_and_rank,
-            lambda s: s["seq_len"] // self.props.get("bucket_length", 7), buffer_size=self.props.get("buffer_size", 3000),
-            need_shuffling=True, print_progress=True)
+        batcher_factory = get_batcher_from_props(
+            samples, self.props["batcher"], feature_extractor.get_padding_value_and_rank, True, True)
 
         train_meta = TaskTrainMeta(
             "NER", graph, batcher_factory,

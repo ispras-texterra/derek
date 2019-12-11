@@ -114,7 +114,7 @@ class TestRelExtManager(unittest.TestCase):
             "clip_norm": 1,
 
             "max_candidate_distance": 20,
-            "batch_size": 8,
+            "batcher": {"batch_size": 8},
 
             "token_position_size": 10,
             "max_word_distance": 10,
@@ -164,7 +164,7 @@ class TestRelExtManager(unittest.TestCase):
                 "learning_rate": 0.02,
                 "query_dense_size": 10,
                 "clip_norm": 1,
-                "batch_size": 1
+                "batcher": {"batch_size": 1}
         }
 
         self.parser_config = {
@@ -172,7 +172,7 @@ class TestRelExtManager(unittest.TestCase):
             "loss": "cross_entropy",
             "learning_rate": 0.02,
             "clip_norm": 1,
-            "batch_size": 1,
+            "batcher": {"batch_size": 1},
 
             "add_shared": True,
             "specific_encoder_size": 10,

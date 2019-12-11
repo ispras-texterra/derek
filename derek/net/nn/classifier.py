@@ -12,7 +12,7 @@ from derek.common.nn.tf_io import save_classifier, load_classifier
 from derek.common.nn.tf_utils import TFSessionAwareClassifier, TFSessionAwareTrainer
 from derek.common.nn.trainers import predict_for_samples, \
     train_for_samples, get_char_padding_size, TaskTrainMeta, get_decayed_lr, get_const_controller
-from derek.common.nn.batchers import get_standard_batcher_factory, get_bucketed_batcher_factory
+from derek.common.nn.batchers import get_standard_batcher_factory, get_batcher_from_props
 from derek.coref.data.model import CoreferenceChain
 from derek.data.model import Document, Entity
 from derek.common.nn.graph_factory import build_graphs_with_shared_encoder
@@ -27,6 +27,9 @@ logger = getLogger('logger')
 
 
 class _Classifier:
+    # TODO make prediction batch size configurable
+    _PREDICTION_BATCH_SIZE = 300
+
     def __init__(self, graph, feature_extractor: GroupingFeatureExtractor, feature_computer, session, saver,
                  grouper_collapser: '_GrouperCollapser'):
         self.graph = graph
@@ -51,10 +54,11 @@ class _Classifier:
             else:
                 ret.update(dict.fromkeys(map(reversed_mapping.get, chain), sample))
 
+        batcher = get_standard_batcher_factory(
+            samples_to_predict, self._PREDICTION_BATCH_SIZE, self.extractor.get_padding_value_and_rank)
+
         # we have only predictions as output
-        predicted_labels, = predict_for_samples(
-            self.graph, self.session, ["predictions"],
-            get_standard_batcher_factory(samples_to_predict, 400, self.extractor.get_padding_value_and_rank))
+        predicted_labels, = predict_for_samples(self.graph, self.session, ["predictions"], batcher)
 
         predicted_types = [self.extractor.get_type(label) for label in predicted_labels]
 
@@ -100,7 +104,7 @@ class NETTrainer(TFSessionAwareTrainer):
             get_bucket_for_sample = lambda s: int(s["chain_len"] == 1)
         else:
             grouper = chain_individual_entities
-            get_bucket_for_sample = lambda s: s["seq_len"][0] // self.props.get("bucket_length", 7)
+            get_bucket_for_sample = lambda s: s["seq_len"][0] // self.props["batcher"]["bucket_length"]
 
         grouper_collapser = _GrouperCollapser(
             CoreferenceChainGrouper(grouper),
@@ -130,10 +134,9 @@ class NETTrainer(TFSessionAwareTrainer):
 
         classifier = _Classifier(graph, feature_extractor, feature_computer, self._session, saver, grouper_collapser)
 
-        batcher_factory = get_bucketed_batcher_factory(
-            samples, self.props["batch_size"], feature_extractor.get_padding_value_and_rank,
-            get_bucket_for_sample, buffer_size=self.props.get("buffer_size", 3000),
-            need_shuffling=True, print_progress=True)
+        batcher_factory = get_batcher_from_props(
+            samples, self.props["batcher"], feature_extractor.get_padding_value_and_rank, True, True,
+            get_bucket_for_sample)
 
         train_meta = TaskTrainMeta(
             "NET", graph, batcher_factory,

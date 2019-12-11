@@ -18,7 +18,7 @@ from derek.common.nn.tf_utils import TFSessionAwareClassifier, TFSessionAwareTra
 from derek.common.nn.trainers import predict_for_samples, train_for_samples, \
     get_char_padding_size, TaskTrainMeta, multitask_scheduler, get_decayed_lr, get_const_controller, \
     get_epoch_shifting_wrapper
-from derek.common.nn.batchers import get_bucketed_batcher_factory, get_standard_batcher_factory
+from derek.common.nn.batchers import get_batcher_from_props, get_standard_batcher_factory
 from derek.data.model import Relation, Document
 from derek.data.entities_collapser import EntitiesCollapser
 from derek.rel_ext.feature_extraction.spans_feature_extractor import generate_spans_common_feature_extractor
@@ -34,19 +34,10 @@ from derek.rel_ext.syntactic.shortest_path.nn.graph_factory import build_task_gr
 logger = getLogger("logger")
 
 
-def get_bucketed_batcher(samples, size, feature_extractor, bucket_samples_len, need_printing, need_shuffling, buffer_size=10000):
-    return get_bucketed_batcher_factory(
-        samples, size, feature_extractor.get_padding_value_and_rank, lambda s: s['seq_len'] // bucket_samples_len,
-        print_progress=need_printing, need_shuffling=need_shuffling, buffer_size=buffer_size)
-
-
-def get_standard_batcher(samples, size, feature_extractor, need_printing, need_shuffling, buffer_size=10000):
-    return get_standard_batcher_factory(
-        samples, size, feature_extractor.get_padding_value_and_rank,
-        print_progress=need_printing, need_shuffling=need_shuffling, buffer_size=buffer_size)
-
-
 class _Classifier:
+    # TODO make prediction batch size configurable
+    _PREDICTION_BATCH_SIZE = 300
+
     def __init__(self, graph: dict, extractor: RelExtFeatureExtractor, feature_computer: AbstractFeatureComputer,
                  session, saver, collapser: EntitiesCollapser):
         self.session = session
@@ -78,9 +69,10 @@ class _Classifier:
         if include_probs:
             outputs.append("scores")
 
-        out = predict_for_samples(
-            self.graph, self.session, outputs,
-            get_standard_batcher(samples, 300, self.extractor, False, False))  # labels, [scores]
+        batcher = get_standard_batcher_factory(
+            samples, self._PREDICTION_BATCH_SIZE, self.extractor.get_padding_value_and_rank)
+
+        out = predict_for_samples(self.graph, self.session, outputs, batcher)  # labels, [scores]
 
         relations = self._collect_pair_results(out[0], entity_pairs)
         relations = self._get_relations(relations)
@@ -321,10 +313,8 @@ def _init_train_meta(
         meta, graph, samples, freeze_shared_ce, classifier=None,
         early_stopping_callback=lambda c, e: False, epoch_shift=None):
 
-    batcher_factory = get_bucketed_batcher(
-        samples, meta.props["batch_size"], meta.feature_extractor, meta.props.get("bucket_length", 7), True, True,
-        meta.props.get("buffer_size", 10000)
-    )
+    batcher_factory = get_batcher_from_props(
+        samples, meta.props["batcher"], meta.feature_extractor.get_padding_value_and_rank, True, True)
 
     controllers = {
         "learning_rate": get_decayed_lr(meta.props["learning_rate"], meta.props.get("lr_decay", 0)),
