@@ -1,5 +1,5 @@
 from functools import reduce
-from typing import Dict, Union, Tuple, Callable
+from typing import Dict, Union, Tuple, Callable, Generator
 
 SCORES_DICT_TYPE = Dict[str, Union[float, 'SCORES_DICT']]
 
@@ -71,13 +71,35 @@ class ResultsStorage:
         return res
 
 
-def get_best_model_picker() -> Tuple[Callable, ResultsStorage]:
+def get_best_model_picker(improvement_controller: Generator[bool, bool, None]) -> Tuple[Callable, ResultsStorage]:
     result = ResultsStorage()
+    next(improvement_controller)
 
     def evaluate(main_score: float, scores: SCORES_DICT_TYPE, func):
-        if result.add_scores(main_score, scores):
+        improvement = result.add_scores(main_score, scores)
+
+        if improvement:
             func()
-        else:
-            pass
+
+        try:
+            improvement_controller.send(improvement)
+        except StopIteration:
+            return True
+
+        return False
 
     return evaluate, result
+
+
+def history_improvement_controller(history_length: int) -> Generator[bool, bool, None]:
+    assert history_length >= 0
+    no_update_for = 0
+    updated = yield None
+
+    while no_update_for < history_length or updated:
+        if updated:
+            no_update_for = 0
+            updated = yield True
+        else:
+            no_update_for += 1
+            updated = yield False
