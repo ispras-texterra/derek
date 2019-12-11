@@ -1,6 +1,6 @@
 from itertools import chain
 from logging import getLogger
-from typing import Iterable, List
+from typing import Iterable, List, Callable
 from collections import namedtuple
 from warnings import warn
 
@@ -147,7 +147,10 @@ class RelExtTrainer(TFSessionAwareTrainer):
         self._feature_computer = CompositeFeatureComputer((self._syntactic_fc, EntityBasedFeatureComputer()))
         self._collapser = EntitiesCollapser(self.props.get("types_to_collapse", set()))
 
-    def train(self, docs: List[Document], unlabeled_docs: Iterable[Document] = None, hook=None):
+    def train(
+            self, docs: List[Document], unlabeled_docs: Iterable[Document] = None,
+            early_stopping_callback: Callable[[RelExtClassifier, int], bool] = lambda c, e: False):
+
         collapsed_docs = FuncIterable(lambda: map(self._collapser.transform, docs))
         prec_docs = self._get_precomputed_docs(collapsed_docs, self._feature_computer)
         if unlabeled_docs is not None:
@@ -161,7 +164,8 @@ class RelExtTrainer(TFSessionAwareTrainer):
             [list(task_meta.feature_extractor.extract_features_from_docs(unlabeled_docs))
              for task_meta in auxiliary_metas]
 
-        self._build_and_train(shared_meta, rel_ext_meta, rel_ext_samples, auxiliary_metas, auxiliary_samples, hook)
+        self._build_and_train(
+            shared_meta, rel_ext_meta, rel_ext_samples, auxiliary_metas, auxiliary_samples, early_stopping_callback)
 
     @staticmethod
     def _get_precomputed_docs(docs, feature_computer):
@@ -236,7 +240,10 @@ class RelExtTrainer(TFSessionAwareTrainer):
         return self._TaskMeta(
             task_name, sdp_fe, sdp_props, build_sdp_task_graph_meta(SDPMeta(sdp_props, sdp_fe.get_labels_size())))
 
-    def _build_and_train(self, shared_meta, rel_ext_meta, rel_ext_samples, auxiliary_metas, auxiliary_samples, hook):
+    def _build_and_train(
+            self, shared_meta, rel_ext_meta, rel_ext_samples, auxiliary_metas, auxiliary_samples,
+            early_stopping_callback):
+
         graphs = self._build_graphs(shared_meta, rel_ext_meta, auxiliary_metas)
         rel_ext_graph = graphs[0]
         auxiliary_graphs = graphs[1:]
@@ -252,9 +259,10 @@ class RelExtTrainer(TFSessionAwareTrainer):
         for meta, samples, graph in zip(auxiliary_metas, auxiliary_samples, auxiliary_graphs):
             pretrained_epochs.append(self._pretrain_auxiliary(meta, graph, samples))
 
-        self._warmup_relext(rel_ext_meta, rel_ext_graph, rel_ext_samples, classifier, hook)
+        self._warmup_relext(rel_ext_meta, rel_ext_graph, rel_ext_samples, classifier, early_stopping_callback)
         self._train_regular(rel_ext_meta, rel_ext_graph, rel_ext_samples, classifier,
-                            auxiliary_metas, auxiliary_graphs, auxiliary_samples, pretrained_epochs, hook)
+                            auxiliary_metas, auxiliary_graphs, auxiliary_samples, pretrained_epochs,
+                            early_stopping_callback)
 
     def _build_graphs(self, shared_meta, rel_ext_meta, auxiliary_metas):
         graph_metas = [rel_ext_meta.taskgraphmeta] + [m.taskgraphmeta for m in auxiliary_metas]
@@ -269,18 +277,19 @@ class RelExtTrainer(TFSessionAwareTrainer):
 
         return epoch
 
-    def _warmup_relext(self, meta, graph, samples, classifier, hook):
+    def _warmup_relext(self, meta, graph, samples, classifier, early_stopping_callback):
         epoch = self.props.get("freeze_shared_ce_epoch", 0)
         if epoch <= 0:
             return
 
         print("Rel-ext warm up for {} epochs".format(epoch))
 
-        train_meta = _init_train_meta(meta, graph, samples, True, classifier, hook)
+        train_meta = _init_train_meta(meta, graph, samples, True, classifier, early_stopping_callback)
         train_for_samples(self._session, epoch, [train_meta])
 
     def _train_regular(self, rel_ext_meta, rel_ext_graph, rel_ext_samples, classifier,
-                       auxiliary_metas, auxiliary_graphs, auxiliary_samples, pretrained_epochs, hook):
+                       auxiliary_metas, auxiliary_graphs, auxiliary_samples, pretrained_epochs,
+                       early_stopping_callback):
 
         freeze_epoch = self.props.get("freeze_shared_ce_epoch", 0)
         epoch = self.props["epoch"] - freeze_epoch
@@ -288,7 +297,7 @@ class RelExtTrainer(TFSessionAwareTrainer):
         print("Training for {} epochs".format(epoch))
 
         rel_ext_train_meta = _init_train_meta(
-            rel_ext_meta, rel_ext_graph, rel_ext_samples, False, classifier, hook, freeze_epoch)
+            rel_ext_meta, rel_ext_graph, rel_ext_samples, False, classifier, early_stopping_callback, freeze_epoch)
 
         train_metas = [rel_ext_train_meta]
         # 1 sample of rel-ext per train step
@@ -308,7 +317,10 @@ class RelExtTrainer(TFSessionAwareTrainer):
         train_for_samples(self._session, epoch, train_metas, multitask_scheduler(schedule))
 
 
-def _init_train_meta(meta, graph, samples, freeze_shared_ce, classifier=None, hook=None, epoch_shift=None):
+def _init_train_meta(
+        meta, graph, samples, freeze_shared_ce, classifier=None,
+        early_stopping_callback=lambda c, e: False, epoch_shift=None):
+
     batcher_factory = get_bucketed_batcher(
         samples, meta.props["batch_size"], meta.feature_extractor, meta.props.get("bucket_length", 7), True, True,
         meta.props.get("buffer_size", 10000)
@@ -324,4 +336,4 @@ def _init_train_meta(meta, graph, samples, freeze_shared_ce, classifier=None, ho
             name: get_epoch_shifting_wrapper(ctrl, epoch_shift)
             for name, ctrl in controllers.items()
         }
-    return TaskTrainMeta(meta.task_name, graph, batcher_factory, controllers, classifier, hook)
+    return TaskTrainMeta(meta.task_name, graph, batcher_factory, controllers, classifier, early_stopping_callback)

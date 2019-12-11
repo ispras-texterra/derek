@@ -79,6 +79,8 @@ def get_evaluating_hook(dev_docs: List[Document], train_docs: List[Document], ev
             f.write(json.dumps({f"epoch_{epoch}": scores}, indent=4, sort_keys=True))
             f.write('\n\n')
 
+        return False
+
     return apply, results_storage
 
 

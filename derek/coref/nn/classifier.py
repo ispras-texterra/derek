@@ -1,7 +1,7 @@
 import os
 from collections import namedtuple
 from logging import getLogger
-from typing import List
+from typing import List, Callable
 
 import tensorflow as tf
 
@@ -157,7 +157,10 @@ class CorefTrainer(TFSessionAwareTrainer):
         self.props = props
         self._feature_computer = FeatureComputer(self.props.get('morph_feats_list', DEFAULT_FEATS_LIST))
 
-    def train(self, docs: List[Document], hook):
+    def train(
+            self, docs: List[Document],
+            early_stopping_callback: Callable[[CorefClassifier, int], bool] = lambda c, e: False):
+
         def log_meta(meta, msg):
             logger.info("{}\n{}".format(msg, meta))
 
@@ -174,7 +177,9 @@ class CorefTrainer(TFSessionAwareTrainer):
 
         print("Extracting features")
 
-        self._get_samples(docs, meta, "SAMPLES_CACHE_PATH", lambda s: self._build_and_train(common_meta, meta, s, hook))
+        self._get_samples(
+            docs, meta, "SAMPLES_CACHE_PATH",
+            lambda s: self._build_and_train(common_meta, meta, s, early_stopping_callback))
 
     def _get_precomputed_docs(self, docs):
         return FuncIterable(lambda: map(self._feature_computer.create_features_for_doc, docs))
@@ -200,25 +205,25 @@ class CorefTrainer(TFSessionAwareTrainer):
         else:
             samples_strategy(samples)
 
-    def _build_and_train(self, common_meta, coref_meta, samples, hook):
+    def _build_and_train(self, common_meta, coref_meta, samples, early_stopping_callback):
         graph = build_coref_graph(self.props, common_meta, [coref_meta])
 
         init = tf.global_variables_initializer()
         self._session.run(init)
 
-        self._train_regular(coref_meta, graph, samples, hook)
+        self._train_regular(coref_meta, graph, samples, early_stopping_callback)
 
-    def _train_regular(self, meta, graph, samples, hook):
+    def _train_regular(self, meta, graph, samples, early_stopping_callback):
         epoch = self.props["epoch"]
 
         print("Training for {} epochs".format(epoch))
 
-        train_meta = self._init_train_meta(meta, graph, samples, hook)
+        train_meta = self._init_train_meta(meta, graph, samples, early_stopping_callback)
 
         train_metas = [train_meta]
         train_for_samples(self._session, epoch, train_metas)
 
-    def _init_train_meta(self, meta, graph, samples, hook):
+    def _init_train_meta(self, meta, graph, samples, early_stopping_callback):
         feature_extractor = meta.feature_extractor
 
         saver = tf.train.Saver(save_relative_paths=True, max_to_keep=100)
@@ -233,13 +238,13 @@ class CorefTrainer(TFSessionAwareTrainer):
         batcher_factory = get_coref_batcher_factory(
             samples, meta.props["batch_size"], feature_extractor, True, True, meta.props.get("buffer_size", 1000))
 
-        return _init_train_meta(meta, graph, batcher_factory, classifier, hook)
+        return _init_train_meta(meta, graph, batcher_factory, classifier, early_stopping_callback)
 
 
-def _init_train_meta(meta, graph, batcher_factory, classifier, hook):
+def _init_train_meta(meta, graph, batcher_factory, classifier, early_stopping_callback):
     controllers = {
         "learning_rate": get_decayed_lr(meta.props["learning_rate"], meta.props.get("lr_decay", 0)),
         "dropout_rate": get_const_controller(meta.props.get("dropout", 1.0)),
     }
 
-    return TaskTrainMeta(meta.task_name, graph, batcher_factory, controllers, classifier, hook)
+    return TaskTrainMeta(meta.task_name, graph, batcher_factory, controllers, classifier, early_stopping_callback)

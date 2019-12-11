@@ -188,7 +188,7 @@ class TestRelExtManager(unittest.TestCase):
         hook, lst = get_training_hook(self.docs_no_rels)
 
         with RelExtTrainer(props) as trainer:
-            trainer.train(self.docs, unlabeled_docs=self.unlabeled_docs if with_unlabeled else None, hook=hook)
+            trainer.train(self.docs, unlabeled_docs=self.unlabeled_docs if with_unlabeled else None, early_stopping_callback=hook)
 
         # validate that hook was called after each epoch
         self.assertEqual(lst, [True] * props["epoch"])

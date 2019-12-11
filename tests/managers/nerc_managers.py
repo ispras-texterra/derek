@@ -89,7 +89,7 @@ class TestNERCManagers(unittest.TestCase):
         hook, lst = get_training_hook(self.docs_no_entities)
 
         with trainer_for("ner")(props) as trainer:
-            trainer.train(self.docs, hook=hook)
+            trainer.train(self.docs, early_stopping_callback=hook)
 
         # validate that hook was called after each epoch
         self.assertEqual(lst, [True] * props["epoch"])
@@ -106,7 +106,7 @@ class TestNERCManagers(unittest.TestCase):
         hook, lst = get_training_hook(self.docs_no_entities)
 
         with trainer_for("net")(props) as trainer:
-            trainer.train(self.docs, hook=hook)
+            trainer.train(self.docs, early_stopping_callback=hook)
 
         # validate that hook was called after each epoch
         self.assertEqual(lst, [True] * props["epoch"])

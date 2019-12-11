@@ -89,7 +89,10 @@ class NETTrainer(TFSessionAwareTrainer):
         super().__init__(props)
         self.props = {**props, "concat_shared": True}
 
-    def train(self, docs: Iterable[Document], unlabeled_docs: Iterable[Document] = None, hook=None):
+    def train(
+            self, docs: Iterable[Document], unlabeled_docs: Iterable[Document] = None,
+            early_stopping_callback: Callable[[NETClassifier, int], bool] = lambda c, e: False):
+
         feature_computer = SyntacticFeatureComputer(self.props.get('morph_feats_list', DEFAULT_FEATS_LIST))
 
         if self.props.get("unify_similar_entities_types", False):
@@ -138,7 +141,7 @@ class NETTrainer(TFSessionAwareTrainer):
                 "learning_rate": get_decayed_lr(self.props["learning_rate"], self.props.get("lr_decay", 0)),
                 "dropout_rate": get_const_controller(self.props.get("dropout", 1.0))
             },
-            classifier, hook)
+            classifier, early_stopping_callback)
 
         train_for_samples(self._session, self.props["epoch"], [train_meta])
 
