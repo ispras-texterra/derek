@@ -8,10 +8,40 @@ from derek.common.helper import BlockIterator, FuncIterable
 
 logger = getLogger('logger')
 
+_DEFAULT_BATCHER_BUFFER_SIZE = 100000
+
+
+def get_batcher_from_props(
+        samples: Iterable, batcher_props: dict, get_padding_value: Callable[[str], Any],
+        print_progress: bool = False, need_shuffling: bool = False, get_bucket_for_sample: Callable = None):
+
+    args = {
+        "samples": samples,
+        "get_padding_value": get_padding_value,
+        "batch_size": batcher_props["batch_size"],
+        "buffer_size": batcher_props.get("buffer_size", _DEFAULT_BATCHER_BUFFER_SIZE),
+        "print_progress": print_progress,
+        "need_shuffling": need_shuffling
+    }
+
+    batcher_type = batcher_props.get("type", "standard")
+    if batcher_type == "bucketing":
+        if get_bucket_for_sample is None:
+            get_bucket_for_sample = lambda s: s['seq_len'] // batcher_props["bucket_length"]
+
+        args["get_bucket_for_sample"] = get_bucket_for_sample
+        factory = get_bucketed_batcher_factory
+    elif batcher_type == "standard":
+        factory = get_standard_batcher_factory
+    else:
+        raise Exception(f"Unknown batcher: {batcher_type}")
+
+    return factory(**args)
+
 
 def get_standard_batcher_factory(
         samples: Iterable, batch_size: int, get_padding_value: Callable[[str], Any], *,
-        print_progress: bool = False, need_shuffling: bool = False, buffer_size: int = 1000):
+        print_progress: bool = False, need_shuffling: bool = False, buffer_size: int = _DEFAULT_BATCHER_BUFFER_SIZE):
     return lambda: _get_batches(
         samples, batch_size, get_padding_value,
         print_progress=print_progress, need_shuffling=need_shuffling, buffer_size=buffer_size)
@@ -20,7 +50,7 @@ def get_standard_batcher_factory(
 def get_bucketed_batcher_factory(
         samples: Iterable, batch_size: int,
         get_padding_value: Callable[[str], Any], get_bucket_for_sample: Callable, *,
-        print_progress: bool = False, need_shuffling: bool = False, buffer_size: int = 1000):
+        print_progress: bool = False, need_shuffling: bool = False, buffer_size: int = _DEFAULT_BATCHER_BUFFER_SIZE):
     return lambda: _get_bucketed_batches(
         samples, batch_size, get_padding_value, get_bucket_for_sample,
         print_progress=print_progress, need_shuffling=need_shuffling, buffer_size=buffer_size)
@@ -28,7 +58,7 @@ def get_bucketed_batcher_factory(
 
 def get_segment_batcher_factory(
         samples: Iterable, batch_key: str, size: int, get_padding_value: Callable[[str], Any], *,
-        print_progress: bool = False, need_shuffling: bool = False, buffer_size: int = 600):
+        print_progress: bool = False, need_shuffling: bool = False, buffer_size: int = _DEFAULT_BATCHER_BUFFER_SIZE):
     return lambda: _get_segment_batches(
         samples, batch_key, size, get_padding_value,
         print_progress=print_progress, need_shuffling=need_shuffling, buffer_size=buffer_size)
@@ -36,7 +66,7 @@ def get_segment_batcher_factory(
 
 def _get_batches(
         samples: Iterable, batch_size: int, get_padding_value: Callable[[str], Any], *,
-        print_progress: bool = False, need_shuffling: bool = False, buffer_size: int = 1000):
+        print_progress: bool = False, need_shuffling: bool = False, buffer_size: int = _DEFAULT_BATCHER_BUFFER_SIZE):
 
     iterator_exceeded = False
     iterator = BlockIterator(iter(samples), buffer_size)
@@ -67,7 +97,7 @@ def _get_batches(
 def _get_bucketed_batches(
         samples: Iterable, batch_size: int,
         get_padding_value: Callable[[str], Any], get_bucket_for_sample: Callable, *,
-        print_progress: bool = False, need_shuffling: bool = False, buffer_size: int = 1000):
+        print_progress: bool = False, need_shuffling: bool = False, buffer_size: int = _DEFAULT_BATCHER_BUFFER_SIZE):
 
     buffers = FuncIterable(lambda: BlockIterator(iter(samples), buffer_size))
 
@@ -114,7 +144,7 @@ def _get_bucketed_batches(
 
 def _get_segment_batches(
         samples: Iterable, batch_key: str, size: int, get_padding_value: Callable[[str], Any], *,
-        print_progress: bool = False, need_shuffling: bool = False, buffer_size: int = 600):
+        print_progress: bool = False, need_shuffling: bool = False, buffer_size: int = _DEFAULT_BATCHER_BUFFER_SIZE):
     try:
         first_sample = next(iter(samples))
     except StopIteration:

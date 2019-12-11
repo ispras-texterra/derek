@@ -68,7 +68,9 @@ class TestNERCManagers(unittest.TestCase):
             "seed": 1,
             "internal_emb_size": 10,
             "learning_rate": 0.005,
-            "batch_size": 4,
+            "batcher": {
+                "batch_size": 4,
+            },
             "encoding_size": 1,
             "dropout": 0.5,
             "optimizer": "adam",
