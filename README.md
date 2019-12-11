@@ -367,7 +367,7 @@ NER model consists of one context encoder and classifier to label each token wit
 `lst.json` can be like:
 ```json
 {
-    "batch_size": [4, 8, 16],
+    "batcher": {"batch_size": [4, 8, 16]},
     "vectors_keys": [["fasttext"], ["fasttext", "upos_hidden"]]
 }
 ```
@@ -379,7 +379,7 @@ NET model consists of one context encoder and classifier to type each entity wit
 `props.json` can be like:
 ```json
 {
-	"batch_size": 4,
+    "batcher": {"batch_size": 4},
     "dropout": 0.5,
 	"optimizer": "adam",
 	"epoch": 10,
@@ -416,7 +416,7 @@ In provided example we add shared encoding to specific features and pass result 
     "epoch": 20,
     "optimizer": "adam",
     "learning_rate": 0.005,
-    "batch_size": 4,
+    "batcher": {"batch_size": 4},
     "clip_norm": 5,
     "dropout": 0.5,
     
@@ -485,7 +485,7 @@ For simplicity DEREK models apply dropout before each layer with the same zeroin
     "optimizer": "adam | adagrad | momentum | adadelta | rmsprop | nadam | sgd",
     "learning_rate": 0.01,
     "lr_decay": 0,
-    "batch_size": 8,
+    "batcher": {"batch_size": 8},
     "clip_norm": 1,
     "dropout": 0.8
 }
@@ -887,7 +887,7 @@ Example:
 {
     "optimizer": "adam",
     "learning_rate": 0.005,
-    "batch_size": 4,
+    "batcher": {"batch_size": 4},
     "dropout": 0.5,
     "clip_norm": 5,
     "epoch": 50,
@@ -921,7 +921,7 @@ Example:
         "loss": "cross_entropy", 
         "dropout": 0.5, 
         "clip_norm": 1, 
-        "batch_size": 16
+        "batcher": {"batch_size": 16}
     },
 
     "sdp_samples_ratio": 1
