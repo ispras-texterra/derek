@@ -15,7 +15,7 @@ from derek.common.logger import init_logger
 from derek import trainer_for, evaluator_for, transformer_from_props
 from derek.data.model import Document
 
-from derek.common.hooks import get_best_model_picker, ResultsStorage
+from derek.common.evaluation.results_controllers import ResultsStorage, get_best_model_picker
 from derek.common.helper import FuncIterable
 
 
