@@ -1,3 +1,4 @@
+![](https://github.com/ispras-texterra/derek/workflows/Tests/badge.svg)
 ## DEREK &ndash; Domain Entities and Relations Extraction Kit
 
 ### Goals and Tasks
