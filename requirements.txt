@@ -1,4 +1,4 @@
-tensorflow==1.13.1
+tensorflow==1.15.0
 fasttext==0.9.1
 gensim==3.8.0
 texterra==1.0.1
