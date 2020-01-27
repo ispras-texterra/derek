@@ -10,6 +10,7 @@ def get_hook(docs_known_rels):
     def evaluate(classifier, epoch):
         pairs_dict = classifier.predict_docs(docs_known_rels, include_probs=True, print_progress=True)
         get_strategy_rels(['pron_rank', 'pron_vote_rank', 'easy_first', 'default'], pairs_dict, docs_known_rels)
+        return False
 
     return evaluate
 

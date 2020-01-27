@@ -1,7 +1,4 @@
 import os
-from typing import Tuple, Callable
-
-from derek.common.helper import ResultsStorage, SCORES_DICT_TYPE
 
 
 def get_saving_hook(out_path, name):
@@ -20,15 +17,3 @@ def get_specific_epoch_hook(hook, epoch):
             hook(classifier, e)
 
     return func
-
-
-def get_best_model_picker() -> Tuple[Callable, ResultsStorage]:
-    result = ResultsStorage()
-
-    def evaluate(main_score: float, scores: SCORES_DICT_TYPE, func):
-        if result.add_scores(main_score, scores):
-            func()
-        else:
-            pass
-
-    return evaluate, result

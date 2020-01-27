@@ -464,6 +464,11 @@ In `lst.json` we can tune parameters for nested dictionary properties.
 This is the maximal number of iterations, best model is chosen according to performance on dev data after each epoch <= `epoch`.
 We recommend to analyze model convergence on some set of hyperparameters and one random seed to ensure that number of epoch is not too big as it makes evaluation of a model for each(!) set of hyperparameters longer and thus could slow down all experiments dramatically. 
 
+Also it is possible to set number of `early_stopping_rounds` which defines how many epochs can be made without overall quality improvement on dev data.
+It means that after another epoch a training procedure can be stopped if previous `early_stopping_rounds` epochs we didn't gain an improvement.     
+For example, if `early_stopping_rounds: 0`, a training procedure will be stopped after first epoch without improvement on dev set.
+We recommend to set this parameter in order not to train for maximum number of epochs and overfit on dev data. 
+
 Learning rate is `learning_rate` / (1 + <num_of_completed_epochs> * `lr_decay`).
 
 `clip_norm` is maximal norm of gradient for clipping.
@@ -476,6 +481,7 @@ For simplicity DEREK models apply dropout before each layer with the same zeroin
 ```json
 {
     "epoch": 10,
+    "early_stopping_rounds": 3,
     "optimizer": "adam | adagrad | momentum | adadelta | rmsprop | nadam | sgd",
     "learning_rate": 0.01,
     "lr_decay": 0,

@@ -1,6 +1,6 @@
 from typing import Union, Callable, Any, List, Tuple
 
-from derek.common.helper import SCORES_DICT_TYPE
+from derek.common.evaluation.results_controllers import SCORES_DICT_TYPE
 from derek.data.model import Document
 from derek.ner.evaluation import evaluate as ner_evaluate
 from derek.net.evaluation import evaluate as net_evaluate

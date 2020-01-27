@@ -75,5 +75,6 @@ def get_training_hook(docs):
             clf.predict_doc(doc)
         # change mutable object to validate this method was called during training
         ret.append(True)
+        return False
 
     return evaluate, ret

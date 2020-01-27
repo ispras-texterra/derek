@@ -15,7 +15,8 @@ from derek.common.logger import init_logger
 from derek import trainer_for, evaluator_for, transformer_from_props
 from derek.data.model import Document
 
-from derek.common.hooks import get_best_model_picker, ResultsStorage
+from derek.common.evaluation.results_controllers import ResultsStorage, get_best_model_picker, \
+    history_improvement_controller
 from derek.common.helper import FuncIterable
 
 
@@ -41,12 +42,15 @@ def props_difference(base_props: dict, props: dict):
     return ret
 
 
-def get_evaluating_hook(dev_docs: List[Document], train_docs: List[Document], evaluate, base_path: str):
+def get_evaluating_hook(
+        dev_docs: List[Document], train_docs: List[Document], evaluate, base_path: str, early_stopping_rounds: int):
+
     stats_path = join(base_path, "best_model_stats")
     os.makedirs(stats_path, exist_ok=True)
     model_path = join(base_path, "best_model")
     os.makedirs(model_path, exist_ok=True)
-    picker, results_storage = get_best_model_picker()
+
+    picker, results_storage = get_best_model_picker(history_improvement_controller(early_stopping_rounds))
 
     def save_clf_and_dump_stats(classifier, stats_generator):
         classifier.save(model_path)
@@ -62,7 +66,7 @@ def get_evaluating_hook(dev_docs: List[Document], train_docs: List[Document], ev
         print("Score={:.4f}".format(dev_main_score))
         print()
 
-        picker(dev_main_score, dev_scores, lambda: save_clf_and_dump_stats(classifier, stats_generator))
+        stopped = picker(dev_main_score, dev_scores, lambda: save_clf_and_dump_stats(classifier, stats_generator))
 
         if epoch % 10 == 0:
             print(f"Epoch {epoch}, train results:")
@@ -78,6 +82,8 @@ def get_evaluating_hook(dev_docs: List[Document], train_docs: List[Document], ev
         with open(join(base_path, 'results.txt'), 'a', encoding='utf-8') as f:
             f.write(json.dumps({f"epoch_{epoch}": scores}, indent=4, sort_keys=True))
             f.write('\n\n')
+
+        return stopped
 
     return apply, results_storage
 
@@ -173,7 +179,9 @@ def seeds_cycle(task_name, seeds_num, props, props_idx, split_idx, dev_docs, tra
         cur_seed_path = join(path, f'seed_{seed_idx}')
         os.makedirs(cur_seed_path, exist_ok=True)
 
-        hook, results = get_evaluating_hook(dev_docs, train_docs, evaluator_for(task_name), cur_seed_path)
+        hook, results = get_evaluating_hook(
+            dev_docs, train_docs, evaluator_for(task_name), cur_seed_path,
+            props.get("early_stopping_rounds", props["epoch"]))
 
         with trainer_for(task_name)({**props, "seed": seed}) as trainer:
             trainer.train(train_docs, unlabeled_docs, hook)
@@ -282,7 +290,7 @@ def main():
     args = create_argparser().parse_args()
     base_props, props_to_evaluate = get_props_to_evaluate(args)
     dataset, unlabeled_docs = load_docs(args)
-    props_picker, props_best_results = get_best_model_picker()
+    props_picker, props_best_results = get_best_model_picker(history_improvement_controller(len(props_to_evaluate)))
 
     if not props_to_evaluate:
         print("No props found")

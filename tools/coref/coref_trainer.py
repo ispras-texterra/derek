@@ -122,6 +122,9 @@ def get_evaluating_hook(serializer, dev_docs, out_path, seed, fold, save_models,
             print()
         with open(os.path.join(sys.argv[1], 'status'), 'w') as f:
             f.write(f'Epoch {epoch}')
+
+        return False
+
     return evaluate, evaluation_result
 
 

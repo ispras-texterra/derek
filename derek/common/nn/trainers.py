@@ -43,7 +43,7 @@ def multitask_scheduler(task_frequencies: List[int]):
 
 TaskTrainMeta = namedtuple(
     "TaskTrainMeta",
-    ["task_name", "graph", "batcher_factory", "controllers", "classifier", "hook"])
+    ["task_name", "graph", "batcher_factory", "controllers", "classifier", "early_stopping_callback"])
 
 
 def train_for_samples(session, epoch_num, task_metas: List[TaskTrainMeta], scheduler=None):
@@ -78,9 +78,14 @@ def train_for_samples(session, epoch_num, task_metas: List[TaskTrainMeta], sched
         for loss_op in sorted(losses.keys(), key=lambda x: str(x)):
             logger.info("Loss {}: ".format(loss_op) + str(np.mean(losses[loss_op])))
 
+        early_stopping = False
         for task_meta in task_metas:
-            if task_meta.hook is not None:
-                task_meta.hook(task_meta.classifier, epoch)
+            if task_meta.early_stopping_callback(task_meta.classifier, epoch):
+                logger.info(f"Early stopping triggered by {task_meta.task_name}")
+                early_stopping = True
+
+        if early_stopping:
+            break
 
         # restart main batcher
         running_batchers[0] = task_metas[0].batcher_factory()

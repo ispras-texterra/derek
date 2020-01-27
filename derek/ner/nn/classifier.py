@@ -1,4 +1,4 @@
-from typing import Iterable, List
+from typing import Iterable, List, Callable
 
 import tensorflow as tf
 from logging import getLogger
@@ -76,7 +76,10 @@ class NERTrainer(TFSessionAwareTrainer):
         super().__init__(props)
         self.props = props
 
-    def train(self, docs: Iterable[Document], unlabeled_docs: Iterable[Document] = None, hook=None):
+    def train(
+            self, docs: Iterable[Document], unlabeled_docs: Iterable[Document] = None,
+            early_stopping_callback: Callable[[NERClassifier, int], bool] = lambda c, e: False):
+
         feature_computer = SyntacticFeatureComputer(self.props.get('morph_feats_list', DEFAULT_FEATS_LIST))
         precomputed_docs = FuncIterable(lambda: map(feature_computer.create_features_for_doc, docs))
 
@@ -110,6 +113,6 @@ class NERTrainer(TFSessionAwareTrainer):
                 "learning_rate": get_decayed_lr(self.props["learning_rate"], self.props.get("lr_decay", 0)),
                 "dropout_rate": get_const_controller(self.props.get("dropout", 1.0))
             },
-            classifier, hook)
+            classifier, early_stopping_callback)
 
         train_for_samples(self._session, self.props["epoch"], [train_meta])
