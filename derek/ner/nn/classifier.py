@@ -1,4 +1,4 @@
-from typing import Iterable, List, Callable
+from typing import Iterable, List, Callable, Tuple
 
 import tensorflow as tf
 from logging import getLogger
@@ -33,7 +33,10 @@ class _Classifier:
         self.saver = saver
         self.post_processor = post_processor
 
-    def predict_doc(self, doc: Document) -> List[Entity]:
+    def predict_doc_with_scores(self, doc: Document) -> Tuple[List[Entity], List[float]]:
+        """
+        :return: (List[Entity] found in doc, List[float] containing sequence labelling score for each Sentence in doc)
+        """
         doc = self.feature_computer.create_features_for_doc(doc)
         sent_samples = self.extractor.extract_features_from_doc(doc)
 
@@ -41,7 +44,8 @@ class _Classifier:
             sent_samples, self._PREDICTION_BATCH_SIZE, self.extractor.get_padding_value_and_rank)
 
         # we have only predictions as output
-        sent_labels, = predict_for_samples(self.graph, self.session, ["predictions"], batcher)
+        # upd: predictions and scores in this function
+        sent_labels, scores = predict_for_samples(self.graph, self.session, ["predictions", "scores"], batcher)
 
         predicted = []
 
@@ -52,6 +56,10 @@ class _Classifier:
         if self.post_processor is not None:
             predicted = self.post_processor(doc, predicted)
 
+        return predicted, scores
+
+    def predict_doc(self, doc: Document) -> List[Entity]:
+        predicted, _ = self.predict_doc_with_scores(doc)
         return predicted
 
     def save(self, out_path):
