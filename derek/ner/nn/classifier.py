@@ -55,7 +55,7 @@ class _Classifier:
 
         return predicted, scores
 
-    def predict_doc(self, doc: Document):
+    def predict_doc(self, doc: Document) -> List[Entity]:
         predicted, _ = self.predict_doc_with_scores(doc)
         return predicted
 
