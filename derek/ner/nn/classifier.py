@@ -1,4 +1,4 @@
-from typing import Iterable, List, Callable
+from typing import Iterable, List, Callable, Tuple
 
 import tensorflow as tf
 from logging import getLogger
