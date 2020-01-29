@@ -33,7 +33,7 @@ class _Classifier:
         self.saver = saver
         self.post_processor = post_processor
 
-    def predict_doc_with_scores(self, doc: Document) -> Tuple[List[Entity], List]:
+    def predict_doc_with_scores(self, doc: Document) -> Tuple[List[Entity], List[float]]:
         doc = self.feature_computer.create_features_for_doc(doc)
         sent_samples = self.extractor.extract_features_from_doc(doc)
 
