@@ -34,6 +34,10 @@ class _Classifier:
         self.post_processor = post_processor
 
     def predict_doc_with_scores(self, doc: Document) -> Tuple[List[Entity], List[float]]:
+        """
+        :param doc: document
+        :return: (list of labels sequences for each sentence in document, score for each sequence)
+        """
         doc = self.feature_computer.create_features_for_doc(doc)
         sent_samples = self.extractor.extract_features_from_doc(doc)
 
