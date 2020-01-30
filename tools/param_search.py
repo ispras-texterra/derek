@@ -98,6 +98,8 @@ def create_argparser():
                         required=True, help='lst.json with props to optimize')
     parser.add_argument('-seeds', type=int, dest='seeds', metavar='<seeds>',
                         required=True, help='number of random seeds')
+    parser.add_argument('-start_seed', type=int, dest='start_seed', metavar='<start seed>',
+                        default=100, help='first random seed to be used while training')
     parser.add_argument('-out', type=str, dest='out_dir', metavar='<output directory>',
                         required=True, help='directory where results are stored')
     parser.add_argument('-unlabeled', type=str, dest='unlabeled', metavar='<unlabeled path>',
@@ -171,11 +173,12 @@ def load_docs(args):
     return dataset, FuncIterable(lambda: read_conllu_file(args.unlabeled)) if args.unlabeled is not None else None
 
 
-def seeds_cycle(task_name, seeds_num, props, props_idx, split_idx, dev_docs, train_docs, unlabeled_docs, path):
+def seeds_cycle(task_name, seeds_num, props, props_idx, split_idx, dev_docs, train_docs, unlabeled_docs, path,
+                start_seed=100):
     seeds_results = ResultsStorage()
 
     for seed_idx in range(seeds_num):
-        seed = 100 * (1 + seed_idx)
+        seed = start_seed + 100 * seed_idx
         cur_seed_path = join(path, f'seed_{seed_idx}')
         os.makedirs(cur_seed_path, exist_ok=True)
 
@@ -210,7 +213,7 @@ def seeds_cycle(task_name, seeds_num, props, props_idx, split_idx, dev_docs, tra
     return mean_main_score, mean_scores
 
 
-def splits_cycle(task_name, seeds_num, props, props_idx, dataset, unlabeled_docs, path):
+def splits_cycle(task_name, seeds_num, props, props_idx, dataset, unlabeled_docs, path, start_seed=100):
     splits_results = ResultsStorage()
 
     for split_idx, (train_docs, dev_docs) in enumerate(dataset.get_splits()):
@@ -219,7 +222,7 @@ def splits_cycle(task_name, seeds_num, props, props_idx, dataset, unlabeled_docs
 
         mean_main_score, mean_scores = seeds_cycle(
             task_name, seeds_num, props, props_idx, split_idx, dev_docs, train_docs, unlabeled_docs,
-            cur_split_path)
+            cur_split_path, start_seed)
 
         splits_results.add_scores(mean_main_score, mean_scores)
 
@@ -310,7 +313,7 @@ def main():
             tr_unlabeled_docs = [t.transform(doc) for doc in unlabeled_docs] if unlabeled_docs is not None else None
 
         mean_main_score, mean_scores = splits_cycle(
-            args.task_name, args.seeds, props, props_idx, tr_dataset, tr_unlabeled_docs, cur_props_path)
+            args.task_name, args.seeds, props, props_idx, tr_dataset, tr_unlabeled_docs, cur_props_path, args.start_seed)
         props_picker(mean_main_score, mean_scores, lambda: None)
 
     best_props_idx = props_best_results.best_score_idx

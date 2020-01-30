@@ -274,7 +274,7 @@ If you want to exclude quotes then you could apply optional `remove_quotes` key.
 ### Obtaining trained model and report of its behaviour with `tools/param_search.py` 
 
 1. setup correct Python module path: `export PYTHONPATH=$PWD:$PWD/babylondigger:$PWD/babylondigger/tdozat-parser-v3`
-1. `python3 tools/param_search.py -task <task name> -props <props.json> -lst <lst.json> -seeds <seeds> -out <where_should_put_results> <dataset_opts>`
+1. `python3 tools/param_search.py -task <task name> -props <props.json> -lst <lst.json> -seeds <seeds> [-start_seed <start seed>] -out <where_should_put_results> <dataset_opts>`
     1. `<task name>` is one of the following: `ner` (Named Entity Recognition), `net` (Named Entity Typing), `rel_ext` (Relation Extraction)
     1. `<props.json>` and `<lst.json>` are JSON property files which contain values of all model hyperparameters.
     `<props.json>` contains base values of hyperparameters used throughout optimization experiments.
@@ -283,7 +283,8 @@ If you want to exclude quotes then you could apply optional `remove_quotes` key.
     Concrete list of available properties is discussed in the following sections.
     1. `<seeds>` is a number of random seeds to evaluate each model on.
     Neural models behaviour and performance highly depends on random initialization, thus we recommend to employ at least 10 seeds for large datasets (e.g., CHEMPROT) and up to 50 seeds for smaller ones (e.g., BB3).
-    Note that experiments are as fast as less seeds are used, thus there is always a trade-off between accuracy and efficiency.
+    Note that experiments are as fast as less seeds are used, thus there is always a trade-off between accuracy and efficiency. 
+    Note: You can use `start seed` option to change default seeds set. 
     1. `<where_should_put_results>` is a directory where best performing models and extensive report of their behaviour for further analysis is placed.
     1. `<dataset_opts>` is a testing strategy: cross-validation (for datasets without established splits, dataset is split to given number of parts at runtime and model is evaluated on all folds) or holdout (for datasets with standard splits, these splits are constantly used for model evaluation).
         1. `cross_validation -traindev <dataset> -folds <folds>` where `<folds>` is a number of parts to split dataset on
