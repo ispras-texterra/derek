@@ -1,26 +1,27 @@
 from typing import Sized
 
-from gensim.models import KeyedVectors
-
 import numpy as np
+
+from derek.common.feature_extraction.embeddings import embedding_readers
+from derek.data.processing_helper import StandardTokenProcessor
 
 
 class WordEmbeddingConverter:
-    def __init__(self, model):
-        binary_flag = model.get("binary", True)
-        self.lower_flag = model.get("lower", False)
-        self.model = KeyedVectors.load_word2vec_format(model["path"], binary=binary_flag, datatype=float)
-        self.oov = np.zeros(self.model.vector_size, dtype=float)
+    def __init__(self, model_config):
+        reader_type = model_config.get("type", "w2v")
+        reader = embedding_readers[reader_type]
+
+        self._model = reader.read(model_config["path"])
+        self._preprocessor = StandardTokenProcessor.from_props(model_config)
+        self._oov = np.zeros(self._model.vector_size, dtype=float)
 
     def __getitem__(self, word):
-        if self.lower_flag:
-            word = word.lower()
-        if word in self.model.vocab:
-            return self.model[word]
-        return self.oov
+        word = self._preprocessor(word)
+        vector = self._model.get_vector_for_token(word)
+        return vector if vector is not None else self._oov
 
     def __len__(self):
-        return self.model.vector_size
+        return self._model.vector_size
 
 
 class ExtrasIdentityConverter:

@@ -1,7 +1,7 @@
 import numpy as np
 from typing import Iterable
-from gensim.models.keyedvectors import Word2VecKeyedVectors
 
+from derek.common.feature_extraction.embeddings import EmbeddingsModel
 from derek.common.feature_extraction.features_meta import BasicFeaturesMeta
 from derek.data.model import Document
 
@@ -14,7 +14,7 @@ def collect_chars_set(docs: Iterable[Document]):
     return chars
 
 
-def extract_tokens(docs: Iterable[Document], preprocessor=None, model: Word2VecKeyedVectors = None, trainable=False):
+def extract_tokens(docs: Iterable[Document], preprocessor=None, model: EmbeddingsModel = None, trainable=False):
     if not trainable:
         return set(model.vocab)
 
@@ -38,17 +38,13 @@ def _get_random_embedding(vector_size):
     return np.random.uniform(-np.sqrt(3 / vector_size), np.sqrt(3 / vector_size), vector_size)
 
 
-def init_vectors(token_dict: dict, vector_size, model: Word2VecKeyedVectors = None, trainable=False):
+def init_vectors(token_dict: dict, vector_size, model: EmbeddingsModel = None, trainable=False):
     ret = np.zeros([len(token_dict), vector_size], dtype=float)
 
     # sorting is applied to ensure reproducibility of results
     for token, idx in sorted(token_dict.items(), key=lambda x: str(x[0])):
 
-        model_vector = None
-
-        if model is not None and token in model:
-            model_vector = model[token]
-
+        model_vector = None if model is None else model.get_vector_for_token(token)
         if model_vector is not None:
             ret[idx] = model_vector
         elif trainable:

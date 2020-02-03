@@ -3,10 +3,10 @@ from typing import Iterable, List
 from warnings import warn
 
 import numpy as np
-from gensim.models import KeyedVectors
 
 from derek.common.feature_extraction.converters import create_unsigned_integers_converter, \
     create_signed_integers_converter, create_categorical_converter
+from derek.common.feature_extraction.embeddings import embedding_readers
 from derek.common.feature_extraction.feature_extractor import TokenFeatureExtractor
 from derek.common.feature_extraction.features_meta import TokenFeaturesMeta, WordEmbeddingsMeta, BasicFeaturesMeta, \
     CharsFeaturesMeta
@@ -56,13 +56,17 @@ def _init_we_features(docs: Iterable[Document], props: dict):
     precomputed_features = []
 
     i = 0
-    for model in props.get('models', []):
-        logger.info("Loading w2v model...")
+    for model_config in props.get('models', []):
+        reader_type = model_config.get("type", "w2v")
+        ignore_errors = model_config.get("ignore_utf_errors", False)
+        reader = embedding_readers[reader_type](errors='ignore' if ignore_errors else 'strict')
+
+        logger.info(f"Loading {reader_type} model...")
         name = f'words_{i}'
 
-        we_model = KeyedVectors.load_word2vec_format(model["path"], binary=model.get("binary", True), datatype=float)
-        trainable = model.get("trainable", False)
-        preprocessor = StandardTokenProcessor.from_props(model)
+        we_model = reader.read(model_config["path"])
+        trainable = model_config.get("trainable", False)
+        preprocessor = StandardTokenProcessor.from_props(model_config)
 
         tokens_set = extract_tokens(docs, preprocessor, we_model, trainable)
         converter = create_categorical_converter(tokens_set, has_oov=True)
