@@ -427,8 +427,7 @@ In provided example we add shared encoding to specific features and pass result 
        "models": [
             {
                 "path": "glove.6B.100d.w2v.txt", 
-                "trainable": false,
-                "binary": false
+                "trainable": false
             }
         ],
         "token_position_size": 15,
@@ -510,8 +509,8 @@ Note that all heuristics could be applied if and only if same preprocessing was 
 
 ```json
 {"models": [
-    {"path": "<first_word2vec_file>", "binary": true, "trainable": false,
-     "lower": false, "replace_digits": false, "replace_quotes": false},
+    {"path": "<first_word2vec_file>", "trainable": false, "lower": false, 
+    "replace_digits": false, "replace_quotes": false},
     {"path": "<second_word2vec_file>"},
     {"type": "glove", "path": "<glove_file>"}
 ]}
@@ -908,8 +907,7 @@ Example:
         "models": [
             {
                 "path": "emb_model.txt", 
-                "trainable": false, 
-                "binary": false
+                "trainable": false
             }
         ],
         "token_position_size": 15,
