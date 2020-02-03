@@ -46,7 +46,7 @@ def _read_w2v_strings(stream: Iterable[str], vocab_size: int, embedding_size: in
         if not line:
             continue
 
-        if len(word2idx) > vocab_size:
+        if len(word2idx) == vocab_size:
             logger.warning("Embeddings file have more entries than specified in the beginning, skipping rest")
             break
 

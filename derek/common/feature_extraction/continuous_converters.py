@@ -9,7 +9,8 @@ from derek.data.processing_helper import StandardTokenProcessor
 class WordEmbeddingConverter:
     def __init__(self, model_config):
         reader_type = model_config.get("type", "w2v")
-        reader = embedding_readers[reader_type]
+        ignore_errors = model_config.get("ignore_utf_errors", False)
+        reader = embedding_readers[reader_type](errors='ignore' if ignore_errors else 'strict')
 
         self._model = reader.read(model_config["path"])
         self._preprocessor = StandardTokenProcessor.from_props(model_config)
