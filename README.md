@@ -427,8 +427,7 @@ In provided example we add shared encoding to specific features and pass result 
        "models": [
             {
                 "path": "glove.6B.100d.w2v.txt", 
-                "trainable": false,
-                "binary": false
+                "trainable": false
             }
         ],
         "token_position_size": 15,
@@ -496,12 +495,12 @@ For simplicity DEREK models apply dropout before each layer with the same zeroin
 
 Several word embedding models could be used simultaneously: e.g., general model with a large dictionary and domain-specific model with smaller dictionary but better in-domain similarity.
 
-Currently word2vec, fastText and TDozat word embedding models are supported.
-GloVe models could be preliminarily converted to word2vec ones via `gensim` tool.
+Currently word2vec, GloVe, fastText and TDozat word embedding models are supported.
+word2vec and GloVe embeddings are supported only in text format, binary ones can be converted with `gensim` tool.
 
-##### word2vec
+##### word2vec, GloVe
 
-Both text and binary formats are supported: could be specified via `binary` flag.
+Embedding type could be specified with `type` property(`w2v`(by default) or `glove`).
 
 All models could be fine-tuned on target task (see `trainable` flag) but we do not recommend doing this for small datasets (e.g., BB3).
 
@@ -510,9 +509,10 @@ Note that all heuristics could be applied if and only if same preprocessing was 
 
 ```json
 {"models": [
-    {"path": "<first_word2vec_file>", "binary": true, "trainable": false,
-     "lower": false, "replace_digits": false, "replace_quotes": false},
-    {"path": "<second_word2vec_file>"}
+    {"path": "<first_word2vec_file>", "trainable": false, "lower": false, 
+    "replace_digits": false, "replace_quotes": false},
+    {"path": "<second_word2vec_file>"},
+    {"type": "glove", "path": "<glove_file>"}
 ]}
 ```
 
@@ -907,8 +907,7 @@ Example:
         "models": [
             {
                 "path": "emb_model.txt", 
-                "trainable": false, 
-                "binary": false
+                "trainable": false
             }
         ],
         "token_position_size": 15,
