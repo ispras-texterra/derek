@@ -83,8 +83,9 @@ def _get_crf_loss(hidden, gold_idx, seq_len, out_size):
     loss = tf.reduce_mean(-losses)
     # score is a [batch_size] tensor with ovrl sequence score
     label, score = tf.contrib.crf.crf_decode(logits, tp, seq_len)
+    normalized_score = score / tf.to_float(seq_len)
 
-    return loss, label, score
+    return loss, label, normalized_score
 
 
 def _create_wang_loss(hidden, labels, out_size):
