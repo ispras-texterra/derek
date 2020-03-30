@@ -1,21 +1,22 @@
+from itertools import chain
+from logging import getLogger
 from typing import Iterable, List, Callable, Tuple
 
 import tensorflow as tf
-from logging import getLogger
 
 from derek.common.feature_computation.manager import SyntacticFeatureComputer
 from derek.common.feature_extraction.factory import DEFAULT_FEATS_LIST
+from derek.common.helper import FuncIterable
 from derek.common.io import save_with_pickle, load_with_pickle
+from derek.common.nn.batchers import get_standard_batcher_factory, get_batcher_from_props
+from derek.common.nn.graph_factory import build_graphs_with_shared_encoder
 from derek.common.nn.tf_io import save_classifier, load_classifier
 from derek.common.nn.tf_utils import TFSessionAwareClassifier, TFSessionAwareTrainer
 from derek.common.nn.trainers import predict_for_samples, \
     train_for_samples, get_char_padding_size, TaskTrainMeta, get_decayed_lr, get_const_controller
-from derek.common.nn.batchers import get_standard_batcher_factory, get_batcher_from_props
 from derek.data.model import Document, Entity
-from derek.common.nn.graph_factory import build_graphs_with_shared_encoder
-from derek.ner.nn.graph_factory import build_task_graph_meta
 from derek.ner.feature_extraction.feature_extractor import generate_feature_extractor, NERFeatureExtractor
-from derek.common.helper import FuncIterable
+from derek.ner.nn.graph_factory import build_task_graph_meta
 from derek.ner.post_processing import unify_types_of_similar_entities
 
 logger = getLogger('logger')
@@ -33,30 +34,42 @@ class _Classifier:
         self.saver = saver
         self.post_processor = post_processor
 
+    def predict_docs_with_scores(self, docs: List[Document]) -> Tuple[List[List[Entity]], List[List[float]]]:
+        docs = self.feature_computer.create_features_for_docs(docs)
+        samples = chain.from_iterable(map(self.extractor.extract_features_from_doc, docs))
+        batcher = get_standard_batcher_factory(
+            samples, self._PREDICTION_BATCH_SIZE, self.extractor.get_padding_value_and_rank)
+
+        sent_labels, scores = predict_for_samples(self.graph, self.session, ["predictions", "scores"], batcher)
+        sent_labels, scores = iter(sent_labels), iter(scores)
+
+        docs_predicted_entities, docs_confidences = [], []
+
+        for doc in docs:
+            predicted_entities, sentences_confidences = [], []
+
+            for sent, labels, score in zip(doc.sentences, sent_labels, scores):
+                # remove padding
+                predicted_entities.extend(self.extractor.encoded_labels_to_entities(sent, labels[:len(sent)]))
+                sentences_confidences.append(score)
+
+            if self.post_processor is not None:
+                predicted_entities = self.post_processor(doc, predicted_entities)
+
+            docs_predicted_entities.append(predicted_entities)
+            docs_confidences.append(sentences_confidences)
+
+        return docs_predicted_entities, docs_confidences
+
+    def predict_docs(self, docs: List[Document]) -> List[List[Entity]]:
+        return self.predict_docs_with_scores(docs)[0]
+
     def predict_doc_with_scores(self, doc: Document) -> Tuple[List[Entity], List[float]]:
         """
         :return: (List[Entity] found in doc, List[float] containing sequence labelling score for each Sentence in doc)
         """
-        doc = self.feature_computer.create_features_for_doc(doc)
-        sent_samples = self.extractor.extract_features_from_doc(doc)
-
-        batcher = get_standard_batcher_factory(
-            sent_samples, self._PREDICTION_BATCH_SIZE, self.extractor.get_padding_value_and_rank)
-
-        # we have only predictions as output
-        # upd: predictions and scores in this function
-        sent_labels, scores = predict_for_samples(self.graph, self.session, ["predictions", "scores"], batcher)
-
-        predicted = []
-
-        for sent, labels in zip(doc.sentences, sent_labels):
-            # remove padding
-            predicted.extend(self.extractor.encoded_labels_to_entities(sent, labels[:len(sent)]))
-
-        if self.post_processor is not None:
-            predicted = self.post_processor(doc, predicted)
-
-        return predicted, scores
+        docs_entities, docs_confidences = self.predict_docs_with_scores([doc])
+        return docs_entities[0], docs_confidences[0]
 
     def predict_doc(self, doc: Document) -> List[Entity]:
         predicted, _ = self.predict_doc_with_scores(doc)
