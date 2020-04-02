@@ -13,7 +13,7 @@ def evaluate(classifier, docs, need_stats):
     gold_ents = [__ents_to_tuple_set(doc.entities) for doc in docs]
     # ensure classifier don't use entities and relations
     docs = [doc.without_relations().without_entities() for doc in docs]
-    predicted_ents = [__ents_to_tuple_set(classifier.predict_doc(doc)) for doc in docs]
+    predicted_ents = list(map(__ents_to_tuple_set, classifier.predict_docs(docs)))
 
     ovrl_precision, ovrl_recall, ovrl_f1 = ir_micro_scores(predicted_ents, gold_ents)
     main_score = ovrl_f1

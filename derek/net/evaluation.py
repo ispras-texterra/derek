@@ -1,6 +1,6 @@
-from typing import List
+from typing import List, Dict, Optional
 
-from derek.data.model import Entity
+from derek.data.model import Entity, Document
 from derek.ner.evaluation import evaluate as ner_evaluate
 
 
@@ -8,12 +8,18 @@ class _NERLikeClassifier:
     def __init__(self, net_classifier):
         self.net_classifier = net_classifier
 
-    def predict_doc(self, doc) -> List[Entity]:
-        ret = []
-        entities_predictions = self.net_classifier.predict_doc(doc)
+    def predict_docs(self, docs: List[Document]) -> List[List[Entity]]:
+        predictions = self.net_classifier.predict_docs(docs)
+        return [self._type_entities(doc.extras["ne"], ent_typing) for doc, ent_typing in zip(docs, predictions)]
 
-        for ent in doc.extras["ne"]:
-            prediction = entities_predictions[ent]
+    def predict_doc(self, doc: Document) -> List[Entity]:
+        return self.predict_docs([doc])[0]
+
+    @staticmethod
+    def _type_entities(entities: List[Entity], entities_typing: Dict[Entity, Optional[str]]):
+        ret = []
+        for ent in entities:
+            prediction = entities_typing[ent]
             if prediction is not None:
                 ret.append(ent.with_type(prediction))
 
