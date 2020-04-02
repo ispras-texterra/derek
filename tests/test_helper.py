@@ -65,16 +65,3 @@ def make_document_from_json_file(file_path):
     if 'relations' in d:
         doc = doc.with_relations(doc_relations)
     return doc
-
-
-def get_training_hook(docs):
-    ret = []
-
-    def evaluate(clf, _):
-        for doc in docs:
-            clf.predict_doc(doc)
-        # change mutable object to validate this method was called during training
-        ret.append(True)
-        return False
-
-    return evaluate, ret
