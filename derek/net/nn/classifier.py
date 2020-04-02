@@ -1,6 +1,6 @@
 from collections import defaultdict
 from operator import itemgetter
-from typing import Iterable, Dict, Union, List, Callable, Tuple
+from typing import Iterable, Dict, List, Callable, Tuple, Optional
 
 import tensorflow as tf
 from logging import getLogger
@@ -39,33 +39,49 @@ class _Classifier:
         self.saver = saver
         self.grouper_collapser = grouper_collapser
 
-    def predict_doc(self, doc: Document) -> Dict[Entity, Union[str, None]]:
-        ret = {}
+    def predict_docs(self, docs: List[Document]) -> List[Dict[Entity, Optional[str]]]:
+        docs_answers, docs_reversed_mappings = [], []
+        docs_chains_to_predict, samples_to_predict = [], []
 
-        collapsed_doc, groups, reversed_mapping = self.grouper_collapser.prepare_doc_with_collapsing(doc)
-        doc = self.feature_computer.create_features_for_doc(collapsed_doc)
-        chain_samples = self.extractor.extract_features_from_doc(doc, groups)
-        entities_to_predict, samples_to_predict = [], []
-
-        for chain, sample in chain_samples:
-            if isinstance(sample, dict):
-                entities_to_predict.append(chain)
-                samples_to_predict.append(sample)
-            else:
-                ret.update(dict.fromkeys(map(reversed_mapping.get, chain), sample))
+        for doc in docs:
+            reversed_mapping, chains_to_predict, doc_samples, ready_answers = self._doc_input(doc)
+            docs_answers.append(ready_answers)
+            docs_reversed_mappings.append(reversed_mapping)
+            docs_chains_to_predict.append(chains_to_predict)
+            samples_to_predict.extend(doc_samples)
 
         batcher = get_standard_batcher_factory(
             samples_to_predict, self._PREDICTION_BATCH_SIZE, self.extractor.get_padding_value_and_rank)
 
         # we have only predictions as output
         predicted_labels, = predict_for_samples(self.graph, self.session, ["predictions"], batcher)
+        predicted_types = map(self.extractor.get_type, predicted_labels)
 
-        predicted_types = [self.extractor.get_type(label) for label in predicted_labels]
+        for t in zip(docs_chains_to_predict, docs_reversed_mappings, docs_answers):
+            chains_to_predict, reversed_mapping, ready_answers = t
+            for chain, predicted_type in zip(chains_to_predict, predicted_types):
+                ready_answers.update(dict.fromkeys(map(reversed_mapping.get, chain), predicted_type))
 
-        for entities, predicted_type in zip(entities_to_predict, predicted_types):
-            ret.update(dict.fromkeys(map(reversed_mapping.get, entities), predicted_type))
+        return docs_answers
 
-        return ret
+    def _doc_input(self, doc: Document):
+        collapsed_doc, groups, reversed_mapping = self.grouper_collapser.prepare_doc_with_collapsing(doc)
+        doc = self.feature_computer.create_features_for_doc(collapsed_doc)
+        chain_samples = self.extractor.extract_features_from_doc(doc, groups)
+        chains_to_predict, samples_to_predict = [], []
+        ready_answers = {}
+
+        for chain, sample in chain_samples:
+            if isinstance(sample, dict):
+                chains_to_predict.append(chain)
+                samples_to_predict.append(sample)
+            else:
+                ready_answers.update(dict.fromkeys(map(reversed_mapping.get, chain), sample))
+
+        return reversed_mapping, chains_to_predict, samples_to_predict, ready_answers
+
+    def predict_doc(self, doc: Document) -> Dict[Entity, Optional[str]]:
+        return self.predict_docs([doc])[0]
 
     def save(self, out_path):
         save_classifier(out_path, self.extractor, self.feature_computer, self.graph, self.session, self.saver)
