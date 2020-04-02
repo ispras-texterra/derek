@@ -7,7 +7,7 @@ import tensorflow as tf
 from derek.common.feature_computation.manager import SyntacticFeatureComputer
 from derek.common.feature_extraction.factory import DEFAULT_FEATS_LIST
 from derek.common.helper import FuncIterable
-from derek.common.io import save_with_pickle, load_with_pickle
+from derek.common.io import save_with_pickle, load_with_pickle, get_batch_size
 from derek.common.nn.batchers import get_standard_batcher_factory, get_batcher_from_props
 from derek.common.nn.graph_factory import build_graphs_with_shared_encoder
 from derek.common.nn.tf_io import save_classifier, load_classifier
@@ -23,8 +23,7 @@ logger = getLogger('logger')
 
 
 class _Classifier:
-    # TODO make prediction batch size configurable
-    _PREDICTION_BATCH_SIZE = 400
+    _PREDICTION_BATCH_SIZE = get_batch_size()
 
     def __init__(self, graph, feature_extractor: NERFeatureExtractor, feature_computer, session, saver, post_processor):
         self.graph = graph

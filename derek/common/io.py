@@ -42,3 +42,7 @@ def _mp_iterate(path: str):
     with open(path, 'rb') as f:
         for obj in msgpack.Unpacker(f, raw=False):
             yield obj
+
+
+def get_batch_size(default: int = 32):
+    return int(os.getenv("PRED_BATCH_SIZE", str(default)))

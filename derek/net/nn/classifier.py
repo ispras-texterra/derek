@@ -7,7 +7,7 @@ from logging import getLogger
 
 from derek.common.feature_computation.manager import SyntacticFeatureComputer
 from derek.common.feature_extraction.factory import DEFAULT_FEATS_LIST
-from derek.common.io import save_with_pickle, load_with_pickle
+from derek.common.io import save_with_pickle, load_with_pickle, get_batch_size
 from derek.common.nn.tf_io import save_classifier, load_classifier
 from derek.common.nn.tf_utils import TFSessionAwareClassifier, TFSessionAwareTrainer
 from derek.common.nn.trainers import predict_for_samples, \
@@ -27,8 +27,7 @@ logger = getLogger('logger')
 
 
 class _Classifier:
-    # TODO make prediction batch size configurable
-    _PREDICTION_BATCH_SIZE = 300
+    _PREDICTION_BATCH_SIZE = get_batch_size()
 
     def __init__(self, graph, feature_extractor: GroupingFeatureExtractor, feature_computer, session, saver,
                  grouper_collapser: '_GrouperCollapser'):
