@@ -1,6 +1,6 @@
 from os import listdir
 from os.path import isdir, join
-from typing import List
+from typing import List, Optional, Dict
 
 from derek.data.model import Document, Entity
 from derek.ner import NERClassifier
@@ -23,19 +23,24 @@ class ChainedNERClassifier:
 
         return self
 
+    def predict_docs(self, docs: List[Document]) -> List[List[Entity]]:
+        docs_entities = self.__ner.predict_docs(docs)
+        docs = [doc.with_additional_extras({"ne": ents}) for doc, ents in zip(docs, docs_entities)]
+        entities_typing = self.__net.predict_docs(docs)
+        return [self._type_entities(ents, typing) for ents, typing in zip(docs_entities, entities_typing)]
+
     def predict_doc(self, doc: Document) -> List[Entity]:
         entities = self.__ner.predict_doc(doc)
         entities_typing = self.__net.predict_doc(doc.with_additional_extras({"ne": entities}))
-        ret = []
+        return self._type_entities(entities, entities_typing)
 
-        for ent in entities:
-            new_type = entities_typing.get(ent, None)
-            if new_type is None:
-                ret.append(ent)
-            else:
-                ret.append(ent.with_type(new_type))
+    @staticmethod
+    def _type_entities(entities: List[Entity], entities_typing: Dict[Entity, Optional[str]]) -> List[Entity]:
+        def type_entity(ent: Entity) -> Entity:
+            new_type = entities_typing.get(ent, ent.type)
+            return ent.with_type(new_type)
 
-        return ret
+        return list(map(type_entity, entities))
 
     def __exit__(self, *exc):
         if self.__net_manager is not None:
