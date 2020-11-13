@@ -32,7 +32,10 @@ def generate_feature_extractor(docs: Iterable[Document], props: dict, char_paddi
     ent_types = collect_entities_types(docs)
 
     labelling_strategy = get_labelling_strategy(props.get("labelling_strategy", "BIO"))
-    labels_converter = create_categorical_converter(labelling_strategy.get_possible_categories(ent_types))
+    labels_converter = create_categorical_converter(
+        labelling_strategy.get_possible_categories(ent_types),
+        zero_padding=False
+    )
     prob_augmentor = EntitiesUnquoteAugmentor(unquote_prob, types_to_unquote)
     feature_extractor = NERFeatureExtractor(
         token_feature_extractor, ne_feature_extractor, labelling_strategy, labels_converter, prob_augmentor)
@@ -79,7 +82,9 @@ class NERFeatureExtractor:
 
     def get_padding_value_and_rank(self, name):
         if name == "labels":
-            return self.labels_converter["$PADDING$"], 1
+            # take outside entity label as padding value
+            outside_ent_label = self.labelling_strategy.outside_ent_label
+            return self.labels_converter[outside_ent_label], 1
 
         ne_padding = self.ne_feature_extractor.get_padding_value_and_rank(name)
         if ne_padding is not None:
