@@ -2,7 +2,19 @@ import unittest
 
 from derek.data.model import Document, Sentence, Paragraph, Entity, Relation
 from derek.rel_ext import RelExtTrainer
-from tests.test_helper import get_training_hook
+
+
+def get_training_hook(docs):
+    ret = []
+
+    def evaluate(clf, _):
+        for doc in docs:
+            clf.predict_doc(doc)
+        # change mutable object to validate this method was called during training
+        ret.append(True)
+        return False
+
+    return evaluate, ret
 
 
 class TestRelExtManager(unittest.TestCase):

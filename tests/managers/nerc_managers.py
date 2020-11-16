@@ -2,7 +2,20 @@ import unittest
 
 from derek import trainer_for
 from derek.data.model import Sentence, Paragraph, Entity, Document, SortedSpansSet
-from tests.test_helper import get_training_hook
+
+
+def get_training_hook(docs, case: unittest.TestCase):
+    ret = []
+
+    def evaluate(clf, _):
+        pred_one_by_one = [clf.predict_doc(doc) for doc in docs]
+        pred_many_at_ones = clf.predict_docs(docs)
+        case.assertListEqual(pred_one_by_one, pred_many_at_ones)
+        # change mutable object to validate this method was called during training
+        ret.append(True)
+        return False
+
+    return evaluate, ret
 
 
 class TestNERCManagers(unittest.TestCase):
@@ -88,7 +101,7 @@ class TestNERCManagers(unittest.TestCase):
             "ne_emb_size": 0
         }
 
-        hook, lst = get_training_hook(self.docs_no_entities)
+        hook, lst = get_training_hook(self.docs_no_entities, self)
 
         with trainer_for("ner")(props) as trainer:
             trainer.train(self.docs, early_stopping_callback=hook)
@@ -105,7 +118,7 @@ class TestNERCManagers(unittest.TestCase):
             "aggregation": {"attention": {}}
         }
 
-        hook, lst = get_training_hook(self.docs_no_entities)
+        hook, lst = get_training_hook(self.docs_no_entities, self)
 
         with trainer_for("net")(props) as trainer:
             trainer.train(self.docs, early_stopping_callback=hook)
