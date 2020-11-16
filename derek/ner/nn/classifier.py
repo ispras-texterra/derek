@@ -33,11 +33,12 @@ class _Classifier:
         self.saver = saver
         self.post_processor = post_processor
 
-    def predict_docs_with_scores(self, docs: List[Document]) -> Tuple[List[List[Entity]], List[List[float]]]:
+    def predict_docs_with_scores(self, docs: List[Document], batch_size: int = _PREDICTION_BATCH_SIZE) \
+            -> Tuple[List[List[Entity]], List[List[float]]]:
+
         docs = self.feature_computer.create_features_for_docs(docs)
         samples = chain.from_iterable(map(self.extractor.extract_features_from_doc, docs))
-        batcher = get_standard_batcher_factory(
-            samples, self._PREDICTION_BATCH_SIZE, self.extractor.get_padding_value_and_rank)
+        batcher = get_standard_batcher_factory(samples, batch_size, self.extractor.get_padding_value_and_rank)
 
         sent_labels, scores = predict_for_samples(self.graph, self.session, ["predictions", "scores"], batcher)
         sent_labels, scores = iter(sent_labels), iter(scores)
@@ -60,8 +61,8 @@ class _Classifier:
 
         return docs_predicted_entities, docs_confidences
 
-    def predict_docs(self, docs: List[Document]) -> List[List[Entity]]:
-        return self.predict_docs_with_scores(docs)[0]
+    def predict_docs(self, docs: List[Document], batch_size: int = _PREDICTION_BATCH_SIZE) -> List[List[Entity]]:
+        return self.predict_docs_with_scores(docs, batch_size)[0]
 
     def predict_doc_with_scores(self, doc: Document) -> Tuple[List[Entity], List[float]]:
         """

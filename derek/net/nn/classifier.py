@@ -38,7 +38,9 @@ class _Classifier:
         self.saver = saver
         self.grouper_collapser = grouper_collapser
 
-    def predict_docs(self, docs: List[Document]) -> List[Dict[Entity, Optional[str]]]:
+    def predict_docs(self, docs: List[Document], batch_size: int = _PREDICTION_BATCH_SIZE) \
+            -> List[Dict[Entity, Optional[str]]]:
+
         docs_answers, docs_reversed_mappings = [], []
         docs_chains_to_predict, samples_to_predict = [], []
 
@@ -49,8 +51,7 @@ class _Classifier:
             docs_chains_to_predict.append(chains_to_predict)
             samples_to_predict.extend(doc_samples)
 
-        batcher = get_standard_batcher_factory(
-            samples_to_predict, self._PREDICTION_BATCH_SIZE, self.extractor.get_padding_value_and_rank)
+        batcher = get_standard_batcher_factory(samples_to_predict, batch_size, self.extractor.get_padding_value_and_rank)
 
         # we have only predictions as output
         predicted_labels, = predict_for_samples(self.graph, self.session, ["predictions"], batcher)

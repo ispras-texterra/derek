@@ -2,12 +2,15 @@ from os import listdir
 from os.path import isdir, join
 from typing import List, Optional, Dict
 
+from derek.common.io import get_batch_size
 from derek.data.model import Document, Entity
 from derek.ner import NERClassifier
 from derek.net import NETClassifier
 
 
 class ChainedNERClassifier:
+    _PREDICTION_BATCH_SIZE = get_batch_size()
+
     def __init__(self, model_path: str):
         self.path = model_path
 
@@ -23,10 +26,10 @@ class ChainedNERClassifier:
 
         return self
 
-    def predict_docs(self, docs: List[Document]) -> List[List[Entity]]:
-        docs_entities = self.__ner.predict_docs(docs)
+    def predict_docs(self, docs: List[Document], batch_size: int = _PREDICTION_BATCH_SIZE) -> List[List[Entity]]:
+        docs_entities = self.__ner.predict_docs(docs, batch_size)
         docs = [doc.with_additional_extras({"ne": ents}) for doc, ents in zip(docs, docs_entities)]
-        entities_typing = self.__net.predict_docs(docs)
+        entities_typing = self.__net.predict_docs(docs, batch_size)
         return [self._type_entities(ents, typing) for ents, typing in zip(docs_entities, entities_typing)]
 
     def predict_doc(self, doc: Document) -> List[Entity]:

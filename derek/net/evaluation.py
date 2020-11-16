@@ -1,15 +1,18 @@
 from typing import List, Dict, Optional
 
+from derek.common.io import get_batch_size
 from derek.data.model import Entity, Document
 from derek.ner.evaluation import evaluate as ner_evaluate
 
 
 class _NERLikeClassifier:
+    _PREDICTION_BATCH_SIZE = get_batch_size()
+
     def __init__(self, net_classifier):
         self.net_classifier = net_classifier
 
-    def predict_docs(self, docs: List[Document]) -> List[List[Entity]]:
-        predictions = self.net_classifier.predict_docs(docs)
+    def predict_docs(self, docs: List[Document], batch_size: int = _PREDICTION_BATCH_SIZE) -> List[List[Entity]]:
+        predictions = self.net_classifier.predict_docs(docs, batch_size)
         return [self._type_entities(doc.extras["ne"], ent_typing) for doc, ent_typing in zip(docs, predictions)]
 
     def predict_doc(self, doc: Document) -> List[Entity]:
