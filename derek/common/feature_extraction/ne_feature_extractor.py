@@ -15,7 +15,8 @@ def generate_ne_feature_extractor(docs: Iterable[Document], props: dict):
         types = collect_entities_types(docs, extras=True)
         labelling_strategy = get_labelling_strategy(props.get("ne_labelling_strategy", "IO"))
         features['ne'] = {
-            'converter': create_categorical_converter(labelling_strategy.get_possible_categories(types), has_oov=True)
+            'converter': create_categorical_converter(labelling_strategy.get_possible_categories(types), has_oov=True,
+                                                      oov_object=labelling_strategy.outside_ent_label)
         }
         if props["ne_emb_size"] != 0:
             features["ne"]['embedding_size'] = props["ne_emb_size"]

@@ -93,7 +93,7 @@ def _get_classifier_features(props, docs):
 
     dual_features.update(
         create_feature('head_ne_types', props,
-                       create_categorical_converter(collect_entities_types(docs, extras=True).union('O'), has_oov=True)))
+                       create_categorical_converter(collect_entities_types(docs, extras=True).union('O'), has_oov=True, oov_object='O')))
 
     classifier_features.update(_get_binary_features(props))
 

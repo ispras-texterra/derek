@@ -108,7 +108,7 @@ def _get_encoder_features(props, docs):
     encoder_features.update(
         create_feature('encoder_entity_ne', props,
                        create_categorical_converter(collect_entities_types(docs, extras=True).union('O'),
-                                                    zero_padding=True, has_oov=True)))
+                                                    zero_padding=True, has_oov=True, oov_object='O')))
 
     speech_types = props.get('speech_types', [])
     speech_size = props.get('speech_size', -1)
