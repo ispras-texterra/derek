@@ -76,6 +76,39 @@ class TestCategoricalConverterClass(unittest.TestCase):
         self.assertEqual(indexed_categories, converter_indexed_categories)
         self.assertRaises(KeyError, getitem, converter, "$PADDING$")
 
+    def test_custom_oov_not_in_set(self):
+        categories_set = {"$HABITAT$", "$BACTERIA$", "hello", "laboratory"}
+        converter = create_categorical_converter(categories_set, zero_padding=False, has_oov=True, oov_object="$CUSTOM$")
+        indexed_categories = {
+            "$BACTERIA$": 0,
+            "$HABITAT$": 1,
+            "hello": 2,
+            "laboratory": 3,
+            "$CUSTOM$": 4,
+            '1': 4,
+            1: 4,
+            'privet': 4,
+        }
+
+        converter_indexed_categories = {key: converter[key] for key in indexed_categories}
+        self.assertEqual(indexed_categories, converter_indexed_categories)
+
+    def test_custom_oov_in_set(self):
+        categories_set = {"$HABITAT$", "$BACTERIA$", "hello", "laboratory"}
+        converter = create_categorical_converter(categories_set, zero_padding=False, has_oov=True, oov_object="hello")
+        indexed_categories = {
+            "$BACTERIA$": 0,
+            "$HABITAT$": 1,
+            "hello": 2,
+            "laboratory": 3,
+            '1': 2,
+            1: 2,
+            'privet': 2,
+        }
+
+        converter_indexed_categories = {key: converter[key] for key in indexed_categories}
+        self.assertEqual(indexed_categories, converter_indexed_categories)
+
 
 class TestUnsignedIntegerConverterClass(unittest.TestCase):
     def test_unsigned_integers_converter_1(self):
