@@ -141,12 +141,13 @@ def _get_relation_level_features(props, rel_arg_types, entities_types, name_post
 
 
 def _get_entities_encoder_features(props, entities_types):
-    entities_types = entities_types.union({None})
+    oov_type = None
+    entities_types = entities_types.union({oov_type})
     features = {}
 
     if props.get("entities_types_emb_size", -1) >= 0:
         features['entities_types'] = {
-            'converter': create_categorical_converter(entities_types)
+            'converter': create_categorical_converter(entities_types, has_oov=True, oov_object=oov_type)
         }
         if props["entities_types_emb_size"] != 0:
             features["entities_types"]['embedding_size'] = props["entities_types_emb_size"]

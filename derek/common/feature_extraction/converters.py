@@ -1,6 +1,8 @@
+from typing import Any
 
-def create_categorical_converter(categories_set: set, zero_padding=True, has_oov=False):
-    ret = CategoricalConverter()
+
+def create_categorical_converter(categories_set: set, zero_padding=True, has_oov=False, oov_object: Any = "$OOV$"):
+    ret = CategoricalConverter(has_oov, oov_object)
 
     # sorting is applied to ensure reproducibility of results
     collection = sorted(categories_set, key=lambda x: str(x))
@@ -9,10 +11,12 @@ def create_categorical_converter(categories_set: set, zero_padding=True, has_oov
         ret['$PADDING$'] = len(ret)
 
     for elem in collection:
+        if elem == '$PADDING$':
+            continue
         ret[elem] = len(ret)
 
-    if has_oov:
-        ret['$OOV$'] = len(ret)
+    if has_oov and oov_object not in ret:
+        ret[oov_object] = len(ret)
 
     return ret
 
@@ -65,8 +69,10 @@ def __signed_log(x: int):  # 0 -> 0, if x > 0: x -> floor(log2(x)) + 1
 
 
 class CategoricalConverter(dict):
-    def __init__(self):
+    def __init__(self, has_oov: bool, oov_object: Any):
         super().__init__()
+        self._has_oov = has_oov
+        self._oov_object = oov_object
 
     def get_reversed_converter(self):
         reversed_converter = {}
@@ -79,11 +85,13 @@ class CategoricalConverter(dict):
         return reversed_converter
 
     def __getitem__(self, item):
-        storege = super(CategoricalConverter, self)
-        if item != "$PADDING$" and '$OOV$' in self:
-            return storege.get(item, storege.__getitem__('$OOV$'))
-        return storege.__getitem__(item)
+        storage = super(CategoricalConverter, self)
+        has_oov = getattr(self, "_has_oov", "$OOV$" in self)  # not to break existing models with old converter
 
+        if item != "$PADDING$" and has_oov:
+            oov_object = getattr(self, "_oov_object", "$OOV$")
+            return storage.get(item, storage.__getitem__(oov_object))
+        return storage.__getitem__(item)
 
 
 class SignedIntegersConverter:
