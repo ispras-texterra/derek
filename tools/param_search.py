@@ -56,8 +56,11 @@ def get_evaluating_hook(
         classifier.save(model_path)
 
         if stats_generator is not None:
-            for i, doc in enumerate(dev_docs):
-                with open(join(stats_path, doc.name + '_stats.txt'), 'w', encoding='utf-8') as f:
+            with open(join(stats_path, 'dev_stats.txt'), 'w', encoding='utf-8') as f:
+                for i, doc in enumerate(dev_docs):
+                    f.write('#' * 80 + '\n')
+                    f.write(f"dev_doc_name = {doc.name}\n")
+                    f.write("-" * 80 + '\n')
                     f.write(stats_generator(i))
 
     def apply(classifier, epoch):
