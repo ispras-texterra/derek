@@ -1,0 +1,38 @@
+#!/usr/bin/env ansible-playbook
+- hosts: all
+  vars:
+    src_destination: ~/derek
+    use_gpu: "false"
+    gpu_options: "all"
+    command_to_run:
+    postfix: "{{ 'gpu' if (use_gpu == 'true') else 'cpu' }}"
+  tasks:
+  - name: Get absolute path
+    command: echo "{{ src_destination }}"
+    register: abs_path
+  - name: Set absolute path
+    set_fact:
+      src_abs_destination: "{{ abs_path.stdout }}"
+  - name: Build container
+    command: docker build . -f "dockerfiles/Dockerfile.{{ postfix }}" -t "derek-{{ postfix }}"
+    become: true
+    args:
+      chdir: "{{ src_abs_destination }}"
+  - name: Run cpu container
+    command: >
+      docker run -d -v "{{ src_abs_destination }}/resources":/derek/resources
+      -v "{{ src_abs_destination }}/out":/derek/out -v "{{ src_abs_destination }}/logs":/derek/logs
+      derek-cpu /bin/bash -c "cd /derek; {{ command_to_run }}"
+    become: true
+    args:
+      chdir: "{{ src_abs_destination }}"
+    when: use_gpu != 'true'
+  - name: Run gpu container
+    command: >
+      docker run --gpus "{{ gpu_options }}" -d -v "{{ src_abs_destination }}/resources":/derek/resources
+      -v "{{ src_abs_destination }}/out":/derek/out -v "{{ src_abs_destination }}/logs":/derek/logs
+      derek-gpu /bin/bash -c "cd /derek; {{ command_to_run }}"
+    become: true
+    args:
+      chdir: "{{ src_abs_destination }}"
+    when: use_gpu == 'true'

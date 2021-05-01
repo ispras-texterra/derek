@@ -1,0 +1,25 @@
+FROM nvidia/cuda:10.0-cudnn7-devel-ubuntu18.04
+MAINTAINER Trifonov Vladislav <trifonov@ispras.ru>
+
+RUN apt-get update \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y locales \
+    && sed -i -e 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen \
+    && dpkg-reconfigure --frontend=noninteractive locales \
+    && update-locale LANG=en_US.UTF-8
+ENV LANG en_US.UTF-8
+ENV LANGUAGE en_US:en
+ENV LC_ALL en_US.UTF-8
+
+RUN apt-get update && apt-get install -qq -y python3 python3-pip
+ENV PYTHONPATH $PYTHONPATH:/derek:/derek/babylondigger:/derek/babylondigger/tdozat-parser-v3
+WORKDIR /derek
+COPY requirements.txt .
+RUN sed -i "s/tensorflow/tensorflow-gpu/g" requirements.txt
+RUN pip3 install -r ./requirements.txt
+COPY tools/requirements.txt ./tools/
+RUN pip3 install -r ./tools/requirements.txt
+RUN python3 -c "import nltk;nltk.download('punkt')"
+
+COPY babylondigger ./babylondigger
+COPY tools ./tools
+COPY derek ./derek

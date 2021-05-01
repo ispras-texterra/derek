@@ -1013,4 +1013,59 @@ Presence of `entities` and `relations` keys is controlled via respective query p
     ```
 1. Build image with command `docker build . -t derek-container-name`
 1. Run container `docker run -p 80:5000 -d derek-container-name`. This command binds host's port 80 to container's port 5000, change it if you wish.
-1. Now you can send requests for server available on 80'th port. 
+1. Now you can send requests for server available on 80'th port.
+
+#### How to run experiments on remote host using Ansible and Docker
+
+We provide some Ansible scripts and Dockerfiles for easy experiment deployment on remote or local host.
+
+Expected experiment pipeline:
+1. Prepare `<src_directory>/resources` folder with experiment required resources on your local machine
+1. Upload code and resources to host machine
+1. Build docker image and run container with experiment on host machine
+1. Wait until experiment is over...
+1. Fetch results to local machine
+
+To run scripts your host must support Docker and your localhost must support Ansible. Also your host user must be in sudoers (required by Docker).
+To use GPUs for experiments your host platform must be supported by [NVIDIA](https://nvidia.github.io/nvidia-docker/) and has CUDA 10 supported driver (>= 410.48) installed.
+
+Firstly you have to prepare [Inventory ansible hosts file](https://docs.ansible.com/ansible/latest/user_guide/intro_inventory.html) to use scripts.
+
+All scripts are executed by following template from src path:
+```bash
+ansible-playbook -i <path-to-inventory> ansible/<script> {-e 'option1=1 option2=2'}
+```
+
+If you don't have Docker installed on host:
+1. Run install_docker.yml
+1. (only for GPU support) Run install_nvidia_extensions.yml
+
+Experiment required resources (embedding models, `props.json`, `lst.json`, segmentation models, dataset etc.) have to be located in `resources` localhost directory inside src directory.
+It's recommended to provide `resources/run.sh` with bash command to start experiment -- prepare dataset, run `param_search.py` (notice: it will run from src directory and PYTHONPATH will be already set), don't forget to set execution flag on localhost (`chmod +x resources/run.sh`).
+Your experiment script must work with `resources`, `out` and `logs` directories because provided scripts connect them to the same containers directories as volumes (it's done in default shell scripts like `holdout.sh` and `cross-validation.sh` automatically).
+Source code and resources will be uploaded to host machine.
+
+Now you are prepared to start experiment:
+1. Upload code and resources with `upload_code_resources.yml`. You can specify directory to store files in with ansible option `src_destination` (default=`~/derek`)
+1. Build and run experiment container with `build_run_container.yml`. 
+If you specified directory on previous step, you must specify it here too.
+Also you need to specify `command_to_run` option with bash command to run.
+If you prepared `resources/run.sh` provide `command_to_run=". resources/run.sh"`.
+If you want to use GPUs provide `use_gpu=true` option. You can specify [NVIDIA Docker options](https://github.com/NVIDIA/nvidia-docker/wiki/Installation-(Native-GPU-Support)#usage) with `gpu_options` (default is `all`).
+
+    Your final command be like:
+    ```bash
+    ansible-playbook -i <path-to-inventory> ansible/build_run_container.yml -e 'command_to_run=". resources/run.sh" use_gpu=true src_destination=~/derek-gpu'
+    ```
+
+Now you can login on host and check if container is running with `sudo docker ps`.
+You can check command logs with `sudo docker logs <container_name>`. It is useful when something went wrong and container is not running.
+You can check volume directories (`resources`, `logs`, `out`) too.
+
+When container is stopped and experiment is over you can download `out` remote host directory contents with `fetch_results.yml`.
+You can specify `fetch_directory_name` option for localhost directory name (default is `out`).
+You need to specify `src_destination` if it was present on previous steps.
+
+To start new experiments you have to remove `resources` and `out` directory on host. You can do it with `remove_resources.yml` and `remove_results.yml` scripts respectively.
+`src_destination` must be set according to previous steps.
+ 
