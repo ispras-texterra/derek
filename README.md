@@ -556,6 +556,19 @@ These features require turning parser on and setting it for corresponding layer 
 }
 ```
 
+#### Capitalization features property
+
+Regularly it's good to know if the word is capitalized or not, contains numeric symbols or not alphanumeric at all.
+
+In the given example we turn on this features and set their embeddings to dimensionality of 20:
+
+```json
+{
+    "capitalization_emb_size": 20
+}
+```
+
+
 #### Character convolution features properties
 
 Many NLP tasks require looking at text on subword level.
