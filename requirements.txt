@@ -1,4 +1,4 @@
-tensorflow==1.13.1
+tensorflow==2.5.3
 fasttext==0.9.1
 texterra==1.0.1
 networkx==2.3
