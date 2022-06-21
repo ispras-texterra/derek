@@ -3,5 +3,5 @@ fasttext==0.9.1
 texterra==1.0.1
 networkx==2.3
 nltk==3.4.5
-numpy==1.16.4
+numpy==1.22.0
 msgpack==0.6.1
